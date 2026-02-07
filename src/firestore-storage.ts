@@ -17,6 +17,18 @@ export function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
 
+// Remove undefined values from object (Firestore doesn't accept undefined)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function cleanForFirestore(obj: any): any {
+  const cleaned = { ...obj };
+  Object.keys(cleaned).forEach((key) => {
+    if (cleaned[key] === undefined) {
+      delete cleaned[key];
+    }
+  });
+  return cleaned;
+}
+
 // Recipes
 export async function getRecipes(): Promise<Recipe[]> {
   const recipesRef = collection(db, RECIPES_COLLECTION);
@@ -31,7 +43,7 @@ export async function getRecipes(): Promise<Recipe[]> {
 export async function addRecipe(recipe: Recipe): Promise<void> {
   try {
     const recipeRef = doc(db, RECIPES_COLLECTION, recipe.id);
-    await setDoc(recipeRef, recipe);
+    await setDoc(recipeRef, cleanForFirestore(recipe));
     console.log('Recipe saved successfully:', recipe.name);
   } catch (error) {
     console.error('Error saving recipe:', error);
@@ -42,7 +54,7 @@ export async function addRecipe(recipe: Recipe): Promise<void> {
 export async function updateRecipe(recipe: Recipe): Promise<void> {
   try {
     const recipeRef = doc(db, RECIPES_COLLECTION, recipe.id);
-    await setDoc(recipeRef, recipe);
+    await setDoc(recipeRef, cleanForFirestore(recipe));
   } catch (error) {
     console.error('Error updating recipe:', error);
     throw error;
