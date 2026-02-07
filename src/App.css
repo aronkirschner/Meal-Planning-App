@@ -483,6 +483,39 @@
   margin-bottom: 1.5rem;
 }
 
+.entry-mode-toggle {
+  display: flex;
+  gap: 0;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.mode-btn {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: none;
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+}
+
+.mode-btn:not(:last-child) {
+  border-right: 1px solid var(--border-color);
+}
+
+.mode-btn:hover {
+  background: var(--bg-secondary);
+}
+
+.mode-btn.active {
+  background: var(--primary-color);
+  color: white;
+}
+
 .form-group {
   margin-bottom: 1.25rem;
 }
