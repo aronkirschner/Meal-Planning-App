@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import type { Recipe, WeekPlan, DayMeal, DayOfWeek } from '../types';
 import { DAYS_OF_WEEK } from '../types';
 import { generateId } from '../firestore-storage';
+import { AIPlannerInput } from './AIPlannerInput';
 
 interface WeekPlannerProps {
   recipes: Recipe[];
@@ -189,6 +190,11 @@ export function WeekPlanner({ recipes, weekPlan, onSave }: WeekPlannerProps) {
     setDays(emptyDays);
   };
 
+  const handleAIPlanGenerated = (plan: Record<DayOfWeek, DayMeal>) => {
+    // Merge AI-generated plan with current days
+    setDays(plan);
+  };
+
   const weekEnd = addDays(currentWeekStart, 6);
 
   return (
@@ -209,6 +215,13 @@ export function WeekPlanner({ recipes, weekPlan, onSave }: WeekPlannerProps) {
         <button onClick={handleNextWeek} className="btn-secondary">
           Next Week
         </button>
+      </div>
+
+      <div className="ai-planner-section">
+        <AIPlannerInput
+          recipes={recipes}
+          onPlanGenerated={handleAIPlanGenerated}
+        />
       </div>
 
       <div className="week-grid">
