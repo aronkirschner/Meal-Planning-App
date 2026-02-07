@@ -138,6 +138,7 @@ export function RecipeForm({ onSave, editRecipe, onCancel }: RecipeFormProps) {
               <option value="main">Main Dish</option>
               <option value="vegetable">Vegetable</option>
               <option value="grain">Grain</option>
+              <option value="other">Other</option>
             </select>
           </div>
 

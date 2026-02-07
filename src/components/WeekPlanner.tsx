@@ -42,6 +42,76 @@ const DAY_LABELS: Record<DayOfWeek, string> = {
   sunday: 'Sunday',
 };
 
+const CUSTOM_PREFIX = 'custom:';
+
+interface MealSelectorProps {
+  label: string;
+  value: string;
+  recipes: Recipe[];
+  onChange: (value: string) => void;
+}
+
+function MealSelector({ label, value, recipes, onChange }: MealSelectorProps) {
+  const isCustom = value.startsWith(CUSTOM_PREFIX);
+  const customText = isCustom ? value.slice(CUSTOM_PREFIX.length) : '';
+  const [showCustomInput, setShowCustomInput] = useState(isCustom);
+
+  const handleSelectChange = (newValue: string) => {
+    if (newValue === '__custom__') {
+      setShowCustomInput(true);
+      onChange(CUSTOM_PREFIX);
+    } else {
+      setShowCustomInput(false);
+      onChange(newValue);
+    }
+  };
+
+  const handleCustomTextChange = (text: string) => {
+    onChange(CUSTOM_PREFIX + text);
+  };
+
+  return (
+    <div className="meal-selector">
+      <label>{label}</label>
+      {showCustomInput ? (
+        <div className="custom-input-group">
+          <input
+            type="text"
+            value={customText}
+            onChange={(e) => handleCustomTextChange(e.target.value)}
+            placeholder="Enter custom item..."
+            className="custom-meal-input"
+          />
+          <button
+            type="button"
+            onClick={() => {
+              setShowCustomInput(false);
+              onChange('');
+            }}
+            className="btn-cancel-custom"
+            title="Back to dropdown"
+          >
+            &times;
+          </button>
+        </div>
+      ) : (
+        <select
+          value={value || ''}
+          onChange={(e) => handleSelectChange(e.target.value)}
+        >
+          <option value="">-- Select --</option>
+          {recipes.map((r) => (
+            <option key={r.id} value={r.id}>
+              {r.name}
+            </option>
+          ))}
+          <option value="__custom__">Custom...</option>
+        </select>
+      )}
+    </div>
+  );
+}
+
 export function WeekPlanner({ recipes, weekPlan, onSave }: WeekPlannerProps) {
   const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => {
     if (weekPlan) {
@@ -76,17 +146,21 @@ export function WeekPlanner({ recipes, weekPlan, onSave }: WeekPlannerProps) {
     () => recipes.filter((r) => r.category === 'grain'),
     [recipes]
   );
+  const otherRecipes = useMemo(
+    () => recipes.filter((r) => r.category === 'other'),
+    [recipes]
+  );
 
   const handleMealChange = (
     day: DayOfWeek,
     mealType: keyof DayMeal,
-    recipeId: string
+    value: string
   ) => {
     setDays((prev) => ({
       ...prev,
       [day]: {
         ...prev[day],
-        [mealType]: recipeId || undefined,
+        [mealType]: value || undefined,
       },
     }));
   };
@@ -147,52 +221,33 @@ export function WeekPlanner({ recipes, weekPlan, onSave }: WeekPlannerProps) {
                 <span className="day-date">{formatDisplayDate(dayDate)}</span>
               </div>
 
-              <div className="meal-selector">
-                <label>Main Dish</label>
-                <select
-                  value={days[day].main || ''}
-                  onChange={(e) => handleMealChange(day, 'main', e.target.value)}
-                >
-                  <option value="">-- Select --</option>
-                  {mainRecipes.map((r) => (
-                    <option key={r.id} value={r.id}>
-                      {r.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <MealSelector
+                label="Main Dish"
+                value={days[day].main || ''}
+                recipes={mainRecipes}
+                onChange={(value) => handleMealChange(day, 'main', value)}
+              />
 
-              <div className="meal-selector">
-                <label>Vegetable</label>
-                <select
-                  value={days[day].vegetable || ''}
-                  onChange={(e) =>
-                    handleMealChange(day, 'vegetable', e.target.value)
-                  }
-                >
-                  <option value="">-- Select --</option>
-                  {vegetableRecipes.map((r) => (
-                    <option key={r.id} value={r.id}>
-                      {r.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <MealSelector
+                label="Vegetable"
+                value={days[day].vegetable || ''}
+                recipes={vegetableRecipes}
+                onChange={(value) => handleMealChange(day, 'vegetable', value)}
+              />
 
-              <div className="meal-selector">
-                <label>Grain</label>
-                <select
-                  value={days[day].grain || ''}
-                  onChange={(e) => handleMealChange(day, 'grain', e.target.value)}
-                >
-                  <option value="">-- Select --</option>
-                  {grainRecipes.map((r) => (
-                    <option key={r.id} value={r.id}>
-                      {r.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <MealSelector
+                label="Grain"
+                value={days[day].grain || ''}
+                recipes={grainRecipes}
+                onChange={(value) => handleMealChange(day, 'grain', value)}
+              />
+
+              <MealSelector
+                label="Other"
+                value={days[day].other || ''}
+                recipes={otherRecipes}
+                onChange={(value) => handleMealChange(day, 'other', value)}
+              />
             </div>
           );
         })}

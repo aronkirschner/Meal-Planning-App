@@ -1,4 +1,4 @@
-export type RecipeCategory = 'main' | 'vegetable' | 'grain';
+export type RecipeCategory = 'main' | 'vegetable' | 'grain' | 'other';
 
 export interface Ingredient {
   name: string;
@@ -17,9 +17,10 @@ export interface Recipe {
 }
 
 export interface DayMeal {
-  main?: string; // Recipe ID
-  vegetable?: string; // Recipe ID
-  grain?: string; // Recipe ID
+  main?: string; // Recipe ID or "custom:text"
+  vegetable?: string; // Recipe ID or "custom:text"
+  grain?: string; // Recipe ID or "custom:text"
+  other?: string; // Recipe ID or "custom:text"
 }
 
 export interface WeekPlan {

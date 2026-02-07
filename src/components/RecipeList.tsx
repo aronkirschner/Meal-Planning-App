@@ -12,6 +12,7 @@ const CATEGORY_LABELS: Record<RecipeCategory, string> = {
   main: 'Main Dishes',
   vegetable: 'Vegetables',
   grain: 'Grains',
+  other: 'Other',
 };
 
 export function RecipeList({ recipes, onUpdate, onDelete }: RecipeListProps) {
@@ -66,6 +67,7 @@ export function RecipeList({ recipes, onUpdate, onDelete }: RecipeListProps) {
           <option value="main">Main Dishes</option>
           <option value="vegetable">Vegetables</option>
           <option value="grain">Grains</option>
+          <option value="other">Other</option>
         </select>
       </div>
 
@@ -74,7 +76,7 @@ export function RecipeList({ recipes, onUpdate, onDelete }: RecipeListProps) {
           No recipes found. Add some recipes to get started!
         </p>
       ) : (
-        (['main', 'vegetable', 'grain'] as RecipeCategory[]).map((category) =>
+        (['main', 'vegetable', 'grain', 'other'] as RecipeCategory[]).map((category) =>
           groupedRecipes[category]?.length > 0 ? (
             <div key={category} className="recipe-category-group">
               <h3>{CATEGORY_LABELS[category]}</h3>

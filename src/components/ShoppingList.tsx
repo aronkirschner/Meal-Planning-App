@@ -12,6 +12,8 @@ interface AggregatedIngredient {
   amounts: string[];
 }
 
+const CUSTOM_PREFIX = 'custom:';
+
 export function ShoppingList({ recipes, weekPlan }: ShoppingListProps) {
   const [copied, setCopied] = useState(false);
 
@@ -21,40 +23,48 @@ export function ShoppingList({ recipes, weekPlan }: ShoppingListProps) {
     return map;
   }, [recipes]);
 
-  const { ingredients, usedRecipes } = useMemo(() => {
+  const { ingredients, usedRecipes, customItems } = useMemo(() => {
     if (!weekPlan) {
-      return { ingredients: [], usedRecipes: [] };
+      return { ingredients: [], usedRecipes: [], customItems: [] };
     }
 
     const ingredientMap = new Map<string, AggregatedIngredient>();
     const usedRecipeIds = new Set<string>();
+    const customItemsSet = new Set<string>();
 
     DAYS_OF_WEEK.forEach((day) => {
       const dayMeals = weekPlan.days[day];
-      const mealTypes: (keyof typeof dayMeals)[] = ['main', 'vegetable', 'grain'];
+      const mealTypes: (keyof typeof dayMeals)[] = ['main', 'vegetable', 'grain', 'other'];
 
       mealTypes.forEach((mealType) => {
-        const recipeId = dayMeals[mealType];
-        if (recipeId) {
-          usedRecipeIds.add(recipeId);
-          const recipe = recipeMap.get(recipeId);
-          if (recipe) {
-            recipe.ingredients.forEach((ing) => {
-              const key = ing.name.toLowerCase().trim();
-              const amountStr = `${ing.amount} ${ing.unit}`.trim();
+        const value = dayMeals[mealType];
+        if (value) {
+          if (value.startsWith(CUSTOM_PREFIX)) {
+            const customText = value.slice(CUSTOM_PREFIX.length).trim();
+            if (customText) {
+              customItemsSet.add(customText);
+            }
+          } else {
+            usedRecipeIds.add(value);
+            const recipe = recipeMap.get(value);
+            if (recipe) {
+              recipe.ingredients.forEach((ing) => {
+                const key = ing.name.toLowerCase().trim();
+                const amountStr = `${ing.amount} ${ing.unit}`.trim();
 
-              if (ingredientMap.has(key)) {
-                const existing = ingredientMap.get(key)!;
-                if (amountStr && !existing.amounts.includes(amountStr)) {
-                  existing.amounts.push(amountStr);
+                if (ingredientMap.has(key)) {
+                  const existing = ingredientMap.get(key)!;
+                  if (amountStr && !existing.amounts.includes(amountStr)) {
+                    existing.amounts.push(amountStr);
+                  }
+                } else {
+                  ingredientMap.set(key, {
+                    name: ing.name,
+                    amounts: amountStr ? [amountStr] : [],
+                  });
                 }
-              } else {
-                ingredientMap.set(key, {
-                  name: ing.name,
-                  amounts: amountStr ? [amountStr] : [],
-                });
-              }
-            });
+              });
+            }
           }
         }
       });
@@ -69,19 +79,20 @@ export function ShoppingList({ recipes, weekPlan }: ShoppingListProps) {
       .filter((r): r is Recipe => r !== undefined)
       .sort((a, b) => a.name.localeCompare(b.name));
 
-    return { ingredients: sortedIngredients, usedRecipes: usedRecipesList };
+    const customItemsList = Array.from(customItemsSet).sort();
+
+    return { ingredients: sortedIngredients, usedRecipes: usedRecipesList, customItems: customItemsList };
   }, [weekPlan, recipeMap]);
 
   const formatForTodoist = (): string => {
-    if (ingredients.length === 0) {
-      return '';
-    }
+    const lines: string[] = [];
 
-    const lines = ingredients.map((ing) => {
+    ingredients.forEach((ing) => {
       if (ing.amounts.length > 0) {
-        return `- ${ing.name} (${ing.amounts.join(' + ')})`;
+        lines.push(`- ${ing.name} (${ing.amounts.join(' + ')})`);
+      } else {
+        lines.push(`- ${ing.name}`);
       }
-      return `- ${ing.name}`;
     });
 
     return lines.join('\n');
@@ -110,7 +121,9 @@ export function ShoppingList({ recipes, weekPlan }: ShoppingListProps) {
     );
   }
 
-  if (ingredients.length === 0) {
+  const hasContent = ingredients.length > 0 || usedRecipes.length > 0 || customItems.length > 0;
+
+  if (!hasContent) {
     return (
       <div className="shopping-list">
         <h3>Shopping List</h3>
@@ -126,42 +139,53 @@ export function ShoppingList({ recipes, weekPlan }: ShoppingListProps) {
     <div className="shopping-list">
       <h3>Shopping List</h3>
 
-      <div className="recipes-used">
-        <h4>Recipes for this week:</h4>
-        <ul>
-          {usedRecipes.map((recipe) => (
-            <li key={recipe.id}>
-              <a href={recipe.url} target="_blank" rel="noopener noreferrer">
-                {recipe.name}
-              </a>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="ingredients-section">
-        <h4>Ingredients:</h4>
-        <ul className="ingredient-list">
-          {ingredients.map((ing, index) => (
-            <li key={index}>
-              <strong>{ing.name}</strong>
-              {ing.amounts.length > 0 && (
-                <span className="amounts"> ({ing.amounts.join(' + ')})</span>
-              )}
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="todoist-section">
-        <h4>Copy for Todoist:</h4>
-        <div className="todoist-preview">
-          <pre>{formatForTodoist()}</pre>
+      {(usedRecipes.length > 0 || customItems.length > 0) && (
+        <div className="recipes-used">
+          <h4>Meals for this week:</h4>
+          <ul>
+            {usedRecipes.map((recipe) => (
+              <li key={recipe.id}>
+                <a href={recipe.url} target="_blank" rel="noopener noreferrer">
+                  {recipe.name}
+                </a>
+              </li>
+            ))}
+            {customItems.map((item, index) => (
+              <li key={`custom-${index}`} className="custom-item">
+                {item} <span className="custom-badge">(custom)</span>
+              </li>
+            ))}
+          </ul>
         </div>
-        <button onClick={handleCopy} className="btn-primary">
-          {copied ? 'Copied!' : 'Copy to Clipboard'}
-        </button>
-      </div>
+      )}
+
+      {ingredients.length > 0 && (
+        <>
+          <div className="ingredients-section">
+            <h4>Ingredients:</h4>
+            <ul className="ingredient-list">
+              {ingredients.map((ing, index) => (
+                <li key={index}>
+                  <strong>{ing.name}</strong>
+                  {ing.amounts.length > 0 && (
+                    <span className="amounts"> ({ing.amounts.join(' + ')})</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="todoist-section">
+            <h4>Copy for Todoist:</h4>
+            <div className="todoist-preview">
+              <pre>{formatForTodoist()}</pre>
+            </div>
+            <button onClick={handleCopy} className="btn-primary">
+              {copied ? 'Copied!' : 'Copy to Clipboard'}
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
