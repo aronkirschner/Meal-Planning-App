@@ -140,6 +140,57 @@
   margin-top: 1.5rem;
 }
 
+/* URL Extract Form */
+.url-input-group {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.url-input-group input {
+  flex: 1;
+}
+
+.url-input-group .btn-primary {
+  white-space: nowrap;
+}
+
+.form-error {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  border: 1px solid #f5c6cb;
+}
+
+.extracted-ingredients {
+  margin: 0;
+  padding-left: 1.5rem;
+  max-height: 200px;
+  overflow-y: auto;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 1rem 1rem 1rem 2rem;
+}
+
+.extracted-ingredients li {
+  margin-bottom: 0.25rem;
+  color: var(--text-secondary);
+}
+
+.extract-hint {
+  color: var(--text-secondary);
+  font-style: italic;
+  text-align: center;
+  margin: 1rem 0 0;
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* Recipe List */
 .recipe-list {
   margin-top: 1rem;

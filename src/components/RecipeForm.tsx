@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Recipe, RecipeCategory, Ingredient } from '../types';
 import { generateId } from '../storage';
+import { extractRecipeFromUrl } from '../api';
 
 interface RecipeFormProps {
   onSave: (recipe: Recipe) => void;
@@ -9,36 +10,54 @@ interface RecipeFormProps {
 }
 
 export function RecipeForm({ onSave, editRecipe, onCancel }: RecipeFormProps) {
-  const [name, setName] = useState(editRecipe?.name || '');
   const [url, setUrl] = useState(editRecipe?.url || '');
+  const [name, setName] = useState(editRecipe?.name || '');
   const [category, setCategory] = useState<RecipeCategory>(
     editRecipe?.category || 'main'
   );
   const [ingredients, setIngredients] = useState<Ingredient[]>(
-    editRecipe?.ingredients || [{ name: '', amount: '', unit: '' }]
+    editRecipe?.ingredients || []
   );
   const [notes, setNotes] = useState(editRecipe?.notes || '');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isExtracted, setIsExtracted] = useState(!!editRecipe);
 
-  const handleAddIngredient = () => {
-    setIngredients([...ingredients, { name: '', amount: '', unit: '' }]);
-  };
+  const handleExtract = async () => {
+    if (!url.trim()) {
+      setError('Please enter a recipe URL');
+      return;
+    }
 
-  const handleRemoveIngredient = (index: number) => {
-    setIngredients(ingredients.filter((_, i) => i !== index));
-  };
+    setIsLoading(true);
+    setError(null);
 
-  const handleIngredientChange = (
-    index: number,
-    field: keyof Ingredient,
-    value: string
-  ) => {
-    const updated = [...ingredients];
-    updated[index] = { ...updated[index], [field]: value };
-    setIngredients(updated);
+    try {
+      const data = await extractRecipeFromUrl(url.trim());
+
+      setName(data.title);
+      setIngredients(
+        data.extendedIngredients.map((ing) => ({
+          name: ing.name,
+          amount: ing.amount.toString(),
+          unit: ing.unit,
+        }))
+      );
+      setIsExtracted(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to extract recipe');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!isExtracted && !editRecipe) {
+      setError('Please extract the recipe first');
+      return;
+    }
 
     const recipe: Recipe = {
       id: editRecipe?.id || generateId(),
@@ -53,11 +72,12 @@ export function RecipeForm({ onSave, editRecipe, onCancel }: RecipeFormProps) {
     onSave(recipe);
 
     if (!editRecipe) {
-      setName('');
       setUrl('');
+      setName('');
       setCategory('main');
-      setIngredients([{ name: '', amount: '', unit: '' }]);
+      setIngredients([]);
       setNotes('');
+      setIsExtracted(false);
     }
   };
 
@@ -65,117 +85,102 @@ export function RecipeForm({ onSave, editRecipe, onCancel }: RecipeFormProps) {
     <form onSubmit={handleSubmit} className="recipe-form">
       <h3>{editRecipe ? 'Edit Recipe' : 'Add New Recipe'}</h3>
 
-      <div className="form-group">
-        <label htmlFor="name">Recipe Name</label>
-        <input
-          id="name"
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="e.g., Grilled Chicken"
-          required
-        />
-      </div>
+      {error && <div className="form-error">{error}</div>}
 
       <div className="form-group">
         <label htmlFor="url">Recipe URL</label>
-        <input
-          id="url"
-          type="url"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://example.com/recipe"
-          required
-        />
-      </div>
-
-      <div className="form-group">
-        <label htmlFor="category">Category</label>
-        <select
-          id="category"
-          value={category}
-          onChange={(e) => setCategory(e.target.value as RecipeCategory)}
-        >
-          <option value="main">Main Dish</option>
-          <option value="vegetable">Vegetable</option>
-          <option value="grain">Grain</option>
-        </select>
-      </div>
-
-      <div className="form-group">
-        <label>Ingredients</label>
-        <div className="ingredients-list">
-          {ingredients.map((ingredient, index) => (
-            <div key={index} className="ingredient-row">
-              <input
-                type="text"
-                value={ingredient.amount}
-                onChange={(e) =>
-                  handleIngredientChange(index, 'amount', e.target.value)
-                }
-                placeholder="Amount"
-                className="ingredient-amount"
-              />
-              <input
-                type="text"
-                value={ingredient.unit}
-                onChange={(e) =>
-                  handleIngredientChange(index, 'unit', e.target.value)
-                }
-                placeholder="Unit"
-                className="ingredient-unit"
-              />
-              <input
-                type="text"
-                value={ingredient.name}
-                onChange={(e) =>
-                  handleIngredientChange(index, 'name', e.target.value)
-                }
-                placeholder="Ingredient name"
-                className="ingredient-name"
-              />
-              {ingredients.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => handleRemoveIngredient(index)}
-                  className="btn-remove"
-                >
-                  Remove
-                </button>
-              )}
-            </div>
-          ))}
+        <div className="url-input-group">
+          <input
+            id="url"
+            type="url"
+            value={url}
+            onChange={(e) => {
+              setUrl(e.target.value);
+              if (!editRecipe) setIsExtracted(false);
+            }}
+            placeholder="https://example.com/recipe"
+            required
+            disabled={isLoading}
+          />
+          {!editRecipe && (
+            <button
+              type="button"
+              onClick={handleExtract}
+              className="btn-primary"
+              disabled={isLoading || !url.trim()}
+            >
+              {isLoading ? 'Extracting...' : 'Extract'}
+            </button>
+          )}
         </div>
-        <button
-          type="button"
-          onClick={handleAddIngredient}
-          className="btn-secondary"
-        >
-          + Add Ingredient
-        </button>
       </div>
 
-      <div className="form-group">
-        <label htmlFor="notes">Notes (optional)</label>
-        <textarea
-          id="notes"
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder="Any additional notes..."
-          rows={3}
-        />
-      </div>
+      {isExtracted && (
+        <>
+          <div className="form-group">
+            <label htmlFor="name">Recipe Name</label>
+            <input
+              id="name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </div>
 
-      <div className="form-actions">
-        <button type="submit" className="btn-primary">
-          {editRecipe ? 'Update Recipe' : 'Add Recipe'}
-        </button>
-        {onCancel && (
-          <button type="button" onClick={onCancel} className="btn-secondary">
-            Cancel
-          </button>
-        )}
-      </div>
+          <div className="form-group">
+            <label htmlFor="category">Category</label>
+            <select
+              id="category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value as RecipeCategory)}
+            >
+              <option value="main">Main Dish</option>
+              <option value="vegetable">Vegetable</option>
+              <option value="grain">Grain</option>
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label>Ingredients ({ingredients.length} found)</label>
+            <ul className="extracted-ingredients">
+              {ingredients.map((ing, index) => (
+                <li key={index}>
+                  {ing.amount} {ing.unit} {ing.name}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="notes">Notes (optional)</label>
+            <textarea
+              id="notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Any additional notes..."
+              rows={2}
+            />
+          </div>
+
+          <div className="form-actions">
+            <button type="submit" className="btn-primary">
+              {editRecipe ? 'Update Recipe' : 'Save Recipe'}
+            </button>
+            {onCancel && (
+              <button type="button" onClick={onCancel} className="btn-secondary">
+                Cancel
+              </button>
+            )}
+          </div>
+        </>
+      )}
+
+      {!isExtracted && !editRecipe && (
+        <p className="extract-hint">
+          Paste a recipe URL and click Extract to automatically import the recipe
+        </p>
+      )}
     </form>
   );
 }
