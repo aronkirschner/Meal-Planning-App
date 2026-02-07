@@ -35,6 +35,17 @@
   color: var(--text-secondary);
 }
 
+.auth-error {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 50vh;
+  font-size: 1.2rem;
+  color: #dc3545;
+  text-align: center;
+  padding: 2rem;
+}
+
 /* Navigation */
 .app-nav {
   display: flex;

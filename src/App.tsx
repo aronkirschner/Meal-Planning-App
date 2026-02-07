@@ -8,6 +8,7 @@ import {
   subscribeToRecipes,
   subscribeToWeekPlans,
 } from './firestore-storage';
+import { initializeAuth } from './firebase';
 import { RecipeForm } from './components/RecipeForm';
 import { RecipeList } from './components/RecipeList';
 import { WeekPlanner } from './components/WeekPlanner';
@@ -35,27 +36,38 @@ function App() {
   const [currentWeekPlan, setCurrentWeekPlan] = useState<WeekPlan | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
 
-  // Subscribe to real-time updates
+  // Initialize auth and subscribe to real-time updates
   useEffect(() => {
-    const unsubRecipes = subscribeToRecipes((updatedRecipes) => {
-      setRecipes(updatedRecipes);
-      setLoading(false);
-    });
+    let unsubRecipes: (() => void) | undefined;
+    let unsubPlans: (() => void) | undefined;
 
-    const unsubPlans = subscribeToWeekPlans((updatedPlans) => {
-      // Find the current week's plan
-      const weekStart = formatDate(getMonday(new Date()));
-      const plan = updatedPlans.find((p) => p.weekStart === weekStart);
-      if (plan) {
-        setCurrentWeekPlan(plan);
-      }
-    });
+    initializeAuth()
+      .then(() => {
+        unsubRecipes = subscribeToRecipes((updatedRecipes) => {
+          setRecipes(updatedRecipes);
+          setLoading(false);
+        });
+
+        unsubPlans = subscribeToWeekPlans((updatedPlans) => {
+          const weekStart = formatDate(getMonday(new Date()));
+          const plan = updatedPlans.find((p) => p.weekStart === weekStart);
+          if (plan) {
+            setCurrentWeekPlan(plan);
+          }
+        });
+      })
+      .catch((error) => {
+        console.error('Auth failed:', error);
+        setAuthError('Failed to authenticate. Please refresh the page.');
+        setLoading(false);
+      });
 
     // Cleanup subscriptions on unmount
     return () => {
-      unsubRecipes();
-      unsubPlans();
+      if (unsubRecipes) unsubRecipes();
+      if (unsubPlans) unsubPlans();
     };
   }, []);
 
@@ -101,6 +113,14 @@ function App() {
     return (
       <div className="app">
         <div className="loading">Loading...</div>
+      </div>
+    );
+  }
+
+  if (authError) {
+    return (
+      <div className="app">
+        <div className="auth-error">{authError}</div>
       </div>
     );
   }
