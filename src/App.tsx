@@ -60,21 +60,41 @@ function App() {
   }, []);
 
   const handleAddRecipe = async (recipe: Recipe) => {
-    await addRecipe(recipe);
-    setShowAddForm(false);
+    try {
+      await addRecipe(recipe);
+      setShowAddForm(false);
+    } catch (error) {
+      console.error('Failed to add recipe:', error);
+      alert('Failed to save recipe. Check console for details.');
+    }
   };
 
   const handleUpdateRecipe = async (recipe: Recipe) => {
-    await updateRecipe(recipe);
+    try {
+      await updateRecipe(recipe);
+    } catch (error) {
+      console.error('Failed to update recipe:', error);
+      alert('Failed to update recipe. Check console for details.');
+    }
   };
 
   const handleDeleteRecipe = async (id: string) => {
-    await deleteRecipe(id);
+    try {
+      await deleteRecipe(id);
+    } catch (error) {
+      console.error('Failed to delete recipe:', error);
+      alert('Failed to delete recipe. Check console for details.');
+    }
   };
 
   const handleSaveWeekPlan = async (plan: WeekPlan) => {
-    await saveWeekPlan(plan);
-    setCurrentWeekPlan(plan);
+    try {
+      await saveWeekPlan(plan);
+      setCurrentWeekPlan(plan);
+    } catch (error) {
+      console.error('Failed to save week plan:', error);
+      alert('Failed to save week plan. Check console for details.');
+    }
   };
 
   if (loading) {

@@ -5,8 +5,6 @@ import {
   setDoc,
   deleteDoc,
   onSnapshot,
-  query,
-  orderBy,
 } from 'firebase/firestore';
 import { db } from './firebase';
 import type { Recipe, WeekPlan } from './types';
@@ -22,24 +20,43 @@ export function generateId(): string {
 // Recipes
 export async function getRecipes(): Promise<Recipe[]> {
   const recipesRef = collection(db, RECIPES_COLLECTION);
-  const q = query(recipesRef, orderBy('createdAt', 'desc'));
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map((doc) => doc.data() as Recipe);
+  const snapshot = await getDocs(recipesRef);
+  const recipes = snapshot.docs.map((doc) => doc.data() as Recipe);
+  // Sort by createdAt descending
+  return recipes.sort((a, b) =>
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
 }
 
 export async function addRecipe(recipe: Recipe): Promise<void> {
-  const recipeRef = doc(db, RECIPES_COLLECTION, recipe.id);
-  await setDoc(recipeRef, recipe);
+  try {
+    const recipeRef = doc(db, RECIPES_COLLECTION, recipe.id);
+    await setDoc(recipeRef, recipe);
+    console.log('Recipe saved successfully:', recipe.name);
+  } catch (error) {
+    console.error('Error saving recipe:', error);
+    throw error;
+  }
 }
 
 export async function updateRecipe(recipe: Recipe): Promise<void> {
-  const recipeRef = doc(db, RECIPES_COLLECTION, recipe.id);
-  await setDoc(recipeRef, recipe);
+  try {
+    const recipeRef = doc(db, RECIPES_COLLECTION, recipe.id);
+    await setDoc(recipeRef, recipe);
+  } catch (error) {
+    console.error('Error updating recipe:', error);
+    throw error;
+  }
 }
 
 export async function deleteRecipe(id: string): Promise<void> {
-  const recipeRef = doc(db, RECIPES_COLLECTION, id);
-  await deleteDoc(recipeRef);
+  try {
+    const recipeRef = doc(db, RECIPES_COLLECTION, id);
+    await deleteDoc(recipeRef);
+  } catch (error) {
+    console.error('Error deleting recipe:', error);
+    throw error;
+  }
 }
 
 // Subscribe to real-time recipe updates
@@ -47,12 +64,21 @@ export function subscribeToRecipes(
   callback: (recipes: Recipe[]) => void
 ): () => void {
   const recipesRef = collection(db, RECIPES_COLLECTION);
-  const q = query(recipesRef, orderBy('createdAt', 'desc'));
 
-  const unsubscribe = onSnapshot(q, (snapshot) => {
-    const recipes = snapshot.docs.map((doc) => doc.data() as Recipe);
-    callback(recipes);
-  });
+  const unsubscribe = onSnapshot(
+    recipesRef,
+    (snapshot) => {
+      const recipes = snapshot.docs.map((doc) => doc.data() as Recipe);
+      // Sort by createdAt descending
+      const sorted = recipes.sort((a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      callback(sorted);
+    },
+    (error) => {
+      console.error('Error subscribing to recipes:', error);
+    }
+  );
 
   return unsubscribe;
 }
@@ -70,8 +96,14 @@ export async function getWeekPlan(weekStart: string): Promise<WeekPlan | undefin
 }
 
 export async function saveWeekPlan(plan: WeekPlan): Promise<void> {
-  const planRef = doc(db, WEEK_PLANS_COLLECTION, plan.id);
-  await setDoc(planRef, plan);
+  try {
+    const planRef = doc(db, WEEK_PLANS_COLLECTION, plan.id);
+    await setDoc(planRef, plan);
+    console.log('Week plan saved successfully');
+  } catch (error) {
+    console.error('Error saving week plan:', error);
+    throw error;
+  }
 }
 
 // Subscribe to real-time week plan updates
@@ -80,10 +112,16 @@ export function subscribeToWeekPlans(
 ): () => void {
   const plansRef = collection(db, WEEK_PLANS_COLLECTION);
 
-  const unsubscribe = onSnapshot(plansRef, (snapshot) => {
-    const plans = snapshot.docs.map((doc) => doc.data() as WeekPlan);
-    callback(plans);
-  });
+  const unsubscribe = onSnapshot(
+    plansRef,
+    (snapshot) => {
+      const plans = snapshot.docs.map((doc) => doc.data() as WeekPlan);
+      callback(plans);
+    },
+    (error) => {
+      console.error('Error subscribing to week plans:', error);
+    }
+  );
 
   return unsubscribe;
 }
