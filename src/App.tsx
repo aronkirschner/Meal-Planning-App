@@ -30,7 +30,7 @@ function formatDate(date: Date): string {
 }
 
 function App() {
-  const [activeTab, setActiveTab] = useState<Tab>('recipes');
+  const [activeTab, setActiveTab] = useState<Tab>('planner');
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [currentWeekPlan, setCurrentWeekPlan] = useState<WeekPlan | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -76,16 +76,16 @@ function App() {
 
       <nav className="app-nav">
         <button
-          className={`nav-btn ${activeTab === 'recipes' ? 'active' : ''}`}
-          onClick={() => setActiveTab('recipes')}
-        >
-          Recipes
-        </button>
-        <button
           className={`nav-btn ${activeTab === 'planner' ? 'active' : ''}`}
           onClick={() => setActiveTab('planner')}
         >
           Week Planner
+        </button>
+        <button
+          className={`nav-btn ${activeTab === 'recipes' ? 'active' : ''}`}
+          onClick={() => setActiveTab('recipes')}
+        >
+          Recipes
         </button>
         <button
           className={`nav-btn ${activeTab === 'shopping' ? 'active' : ''}`}
