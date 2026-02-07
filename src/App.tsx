@@ -1,14 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Recipe, WeekPlan, Family } from './types';
 import {
   addRecipe,
   updateRecipe,
   deleteRecipe,
   saveWeekPlan,
-  subscribeToRecipes,
-  subscribeToWeekPlans,
+  getRecipes,
+  getWeekPlans,
   getFamily,
-  subscribeToFamily,
 } from './firestore-storage';
 import { AuthProvider, useAuth } from './AuthContext';
 import { Login } from './components/Login';
@@ -55,50 +54,44 @@ function MealPlannerApp() {
     }
   }, [appUser?.familyId, family, setFamily]);
 
-  // Subscribe to family updates and data once family is set
-  useEffect(() => {
+  // Function to load data (can be called to refresh)
+  const loadData = useCallback(async () => {
     if (!family) {
       setDataLoading(false);
       return;
     }
 
-    let unsubRecipes: (() => void) | undefined;
-    let unsubPlans: (() => void) | undefined;
-    let unsubFamily: (() => void) | undefined;
+    try {
+      // Fetch recipes
+      const fetchedRecipes = await getRecipes(family.id);
+      setRecipes(fetchedRecipes);
 
-    // Subscribe to family updates
-    unsubFamily = subscribeToFamily(family.id, (updatedFamily) => {
-      if (updatedFamily) {
-        setFamily(updatedFamily);
-      }
-    });
-
-    // Subscribe to recipes
-    unsubRecipes = subscribeToRecipes(family.id, (updatedRecipes) => {
-      setRecipes(updatedRecipes);
-      setDataLoading(false);
-    });
-
-    // Subscribe to week plans
-    unsubPlans = subscribeToWeekPlans(family.id, (updatedPlans) => {
+      // Fetch week plans
+      const fetchedPlans = await getWeekPlans(family.id);
       const weekStart = formatDate(getMonday(new Date()));
-      const plan = updatedPlans.find((p) => p.weekStart === weekStart);
+      const plan = fetchedPlans.find((p) => p.weekStart === weekStart);
       if (plan) {
         setCurrentWeekPlan(plan);
       }
-    });
+    } catch (error) {
+      console.error('Error loading data:', error);
+    } finally {
+      setDataLoading(false);
+    }
+  }, [family]);
 
-    return () => {
-      if (unsubRecipes) unsubRecipes();
-      if (unsubPlans) unsubPlans();
-      if (unsubFamily) unsubFamily();
-    };
-  }, [family, setFamily]);
+  // Load data when family changes
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleAddRecipe = async (recipe: Recipe) => {
     if (!family) return;
     try {
       await addRecipe(family.id, recipe);
+      // Refresh data after adding
+      const fetchedRecipes = await getRecipes(family.id);
+      setRecipes(fetchedRecipes);
       setShowAddForm(false);
     } catch (error) {
       console.error('Failed to add recipe:', error);
@@ -110,6 +103,9 @@ function MealPlannerApp() {
     if (!family) return;
     try {
       await updateRecipe(family.id, recipe);
+      // Refresh data after updating
+      const fetchedRecipes = await getRecipes(family.id);
+      setRecipes(fetchedRecipes);
     } catch (error) {
       console.error('Failed to update recipe:', error);
       alert('Failed to update recipe. Check console for details.');
@@ -120,6 +116,9 @@ function MealPlannerApp() {
     if (!family) return;
     try {
       await deleteRecipe(family.id, id);
+      // Refresh data after deleting
+      const fetchedRecipes = await getRecipes(family.id);
+      setRecipes(fetchedRecipes);
     } catch (error) {
       console.error('Failed to delete recipe:', error);
       alert('Failed to delete recipe. Check console for details.');
