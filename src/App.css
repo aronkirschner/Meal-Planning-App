@@ -15,6 +15,30 @@
   margin-bottom: 1rem;
 }
 
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
+
+.user-name {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
 .app-header h1 {
   margin: 0;
   font-size: 2rem;
@@ -24,6 +48,216 @@
 .subtitle {
   margin: 0.5rem 0 0;
   color: var(--text-secondary);
+}
+
+.invite-toggle {
+  margin-top: 0.5rem;
+}
+
+.invite-code-display {
+  background: var(--bg-secondary);
+  padding: 1rem;
+  border-radius: 8px;
+  margin-top: 0.75rem;
+  display: inline-block;
+}
+
+.invite-code-display p {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.invite-code {
+  font-size: 1.5rem;
+  font-weight: bold;
+  letter-spacing: 0.2em;
+  color: var(--primary-color);
+  background: var(--bg-primary);
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+}
+
+/* Login Page */
+.login-container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+  background: var(--bg-primary);
+}
+
+.login-card {
+  background: var(--bg-secondary);
+  padding: 3rem;
+  border-radius: 16px;
+  text-align: center;
+  max-width: 400px;
+  width: 100%;
+  border: 1px solid var(--border-color);
+}
+
+.login-card h1 {
+  margin: 0 0 0.5rem;
+  font-size: 2rem;
+  color: var(--text-primary);
+}
+
+.login-subtitle {
+  margin: 0 0 2rem;
+  color: var(--text-secondary);
+}
+
+.login-error {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+.btn-google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.875rem 1.5rem;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+  color: #333;
+}
+
+.btn-google:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.google-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.login-footer {
+  margin: 2rem 0 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+/* Family Manager */
+.family-manager {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+  background: var(--bg-primary);
+}
+
+.family-card {
+  background: var(--bg-secondary);
+  padding: 2rem;
+  border-radius: 16px;
+  max-width: 500px;
+  width: 100%;
+  border: 1px solid var(--border-color);
+}
+
+.family-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.family-header h2 {
+  margin: 0 0 0.5rem;
+  color: var(--text-primary);
+}
+
+.family-header p {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.family-error {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+.family-options {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.btn-family-option {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: var(--bg-primary);
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.2s;
+}
+
+.btn-family-option:hover {
+  border-color: var(--primary-color);
+}
+
+.option-icon {
+  font-size: 1.5rem;
+  width: 40px;
+  text-align: center;
+}
+
+.option-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.option-text strong {
+  color: var(--text-primary);
+  font-size: 1.1rem;
+}
+
+.option-text small {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.family-form {
+  margin-top: 1rem;
+}
+
+.family-form-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.family-form-actions .btn-secondary {
+  flex: 1;
+}
+
+.family-form-actions .btn-primary {
+  flex: 2;
+}
+
+.family-footer {
+  text-align: center;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
 }
 
 .loading {

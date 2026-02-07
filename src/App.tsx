@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { Recipe, WeekPlan } from './types';
+import type { Recipe, WeekPlan, Family } from './types';
 import {
   addRecipe,
   updateRecipe,
@@ -7,8 +7,12 @@ import {
   saveWeekPlan,
   subscribeToRecipes,
   subscribeToWeekPlans,
+  getFamily,
+  subscribeToFamily,
 } from './firestore-storage';
-import { initializeAuth } from './firebase';
+import { AuthProvider, useAuth } from './AuthContext';
+import { Login } from './components/Login';
+import { FamilyManager } from './components/FamilyManager';
 import { RecipeForm } from './components/RecipeForm';
 import { RecipeList } from './components/RecipeList';
 import { WeekPlanner } from './components/WeekPlanner';
@@ -30,50 +34,70 @@ function formatDate(date: Date): string {
   return date.toISOString().split('T')[0];
 }
 
-function App() {
+function MealPlannerApp() {
+  const { appUser, family, setFamily, logOut, loading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>('planner');
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [currentWeekPlan, setCurrentWeekPlan] = useState<WeekPlan | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [authError, setAuthError] = useState<string | null>(null);
+  const [dataLoading, setDataLoading] = useState(true);
+  const [showInviteCode, setShowInviteCode] = useState(false);
 
-  // Initialize auth and subscribe to real-time updates
+  // Load family data if user has a familyId
   useEffect(() => {
+    if (appUser?.familyId && !family) {
+      getFamily(appUser.familyId).then((loadedFamily) => {
+        if (loadedFamily) {
+          setFamily(loadedFamily);
+        }
+      });
+    }
+  }, [appUser?.familyId, family, setFamily]);
+
+  // Subscribe to family updates and data once family is set
+  useEffect(() => {
+    if (!family) {
+      setDataLoading(false);
+      return;
+    }
+
     let unsubRecipes: (() => void) | undefined;
     let unsubPlans: (() => void) | undefined;
+    let unsubFamily: (() => void) | undefined;
 
-    initializeAuth()
-      .then(() => {
-        unsubRecipes = subscribeToRecipes((updatedRecipes) => {
-          setRecipes(updatedRecipes);
-          setLoading(false);
-        });
+    // Subscribe to family updates
+    unsubFamily = subscribeToFamily(family.id, (updatedFamily) => {
+      if (updatedFamily) {
+        setFamily(updatedFamily);
+      }
+    });
 
-        unsubPlans = subscribeToWeekPlans((updatedPlans) => {
-          const weekStart = formatDate(getMonday(new Date()));
-          const plan = updatedPlans.find((p) => p.weekStart === weekStart);
-          if (plan) {
-            setCurrentWeekPlan(plan);
-          }
-        });
-      })
-      .catch((error) => {
-        console.error('Auth failed:', error);
-        setAuthError('Failed to authenticate. Please refresh the page.');
-        setLoading(false);
-      });
+    // Subscribe to recipes
+    unsubRecipes = subscribeToRecipes(family.id, (updatedRecipes) => {
+      setRecipes(updatedRecipes);
+      setDataLoading(false);
+    });
 
-    // Cleanup subscriptions on unmount
+    // Subscribe to week plans
+    unsubPlans = subscribeToWeekPlans(family.id, (updatedPlans) => {
+      const weekStart = formatDate(getMonday(new Date()));
+      const plan = updatedPlans.find((p) => p.weekStart === weekStart);
+      if (plan) {
+        setCurrentWeekPlan(plan);
+      }
+    });
+
     return () => {
       if (unsubRecipes) unsubRecipes();
       if (unsubPlans) unsubPlans();
+      if (unsubFamily) unsubFamily();
     };
-  }, []);
+  }, [family, setFamily]);
 
   const handleAddRecipe = async (recipe: Recipe) => {
+    if (!family) return;
     try {
-      await addRecipe(recipe);
+      await addRecipe(family.id, recipe);
       setShowAddForm(false);
     } catch (error) {
       console.error('Failed to add recipe:', error);
@@ -82,8 +106,9 @@ function App() {
   };
 
   const handleUpdateRecipe = async (recipe: Recipe) => {
+    if (!family) return;
     try {
-      await updateRecipe(recipe);
+      await updateRecipe(family.id, recipe);
     } catch (error) {
       console.error('Failed to update recipe:', error);
       alert('Failed to update recipe. Check console for details.');
@@ -91,8 +116,9 @@ function App() {
   };
 
   const handleDeleteRecipe = async (id: string) => {
+    if (!family) return;
     try {
-      await deleteRecipe(id);
+      await deleteRecipe(family.id, id);
     } catch (error) {
       console.error('Failed to delete recipe:', error);
       alert('Failed to delete recipe. Check console for details.');
@@ -100,8 +126,9 @@ function App() {
   };
 
   const handleSaveWeekPlan = async (plan: WeekPlan) => {
+    if (!family) return;
     try {
-      await saveWeekPlan(plan);
+      await saveWeekPlan(family.id, plan);
       setCurrentWeekPlan(plan);
     } catch (error) {
       console.error('Failed to save week plan:', error);
@@ -109,7 +136,12 @@ function App() {
     }
   };
 
-  if (loading) {
+  const handleFamilySelected = (selectedFamily: Family) => {
+    setFamily(selectedFamily);
+  };
+
+  // Show loading state
+  if (authLoading) {
     return (
       <div className="app">
         <div className="loading">Loading...</div>
@@ -117,10 +149,21 @@ function App() {
     );
   }
 
-  if (authError) {
+  // Show login if not authenticated
+  if (!appUser) {
+    return <Login />;
+  }
+
+  // Show family manager if no family
+  if (!family) {
+    return <FamilyManager onFamilySelected={handleFamilySelected} />;
+  }
+
+  // Show loading while data loads
+  if (dataLoading) {
     return (
       <div className="app">
-        <div className="auth-error">{authError}</div>
+        <div className="loading">Loading your family's data...</div>
       </div>
     );
   }
@@ -128,8 +171,35 @@ function App() {
   return (
     <div className="app">
       <header className="app-header">
+        <div className="header-top">
+          <div className="user-info">
+            {appUser.photoURL && (
+              <img
+                src={appUser.photoURL}
+                alt=""
+                className="user-avatar"
+              />
+            )}
+            <span className="user-name">{appUser.displayName}</span>
+          </div>
+          <button onClick={logOut} className="btn-secondary btn-sm">
+            Sign Out
+          </button>
+        </div>
         <h1>Meal Planner</h1>
-        <p className="subtitle">Plan your weekly meals together</p>
+        <p className="subtitle">{family.name}</p>
+        <button
+          onClick={() => setShowInviteCode(!showInviteCode)}
+          className="btn-link invite-toggle"
+        >
+          {showInviteCode ? 'Hide Invite Code' : 'Invite Family Members'}
+        </button>
+        {showInviteCode && (
+          <div className="invite-code-display">
+            <p>Share this code with family members:</p>
+            <code className="invite-code">{family.inviteCode}</code>
+          </div>
+        )}
       </header>
 
       <nav className="app-nav">
@@ -203,6 +273,14 @@ function App() {
         <p>Data syncs across all your devices</p>
       </footer>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <MealPlannerApp />
+    </AuthProvider>
   );
 }
 

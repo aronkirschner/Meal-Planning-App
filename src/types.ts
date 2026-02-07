@@ -49,3 +49,21 @@ export const DAYS_OF_WEEK: DayOfWeek[] = [
   'saturday',
   'sunday',
 ];
+
+// User and Family types for multi-family support
+export interface AppUser {
+  uid: string;
+  email: string;
+  displayName: string | null;
+  photoURL: string | null;
+  familyId: string | null; // null if user hasn't joined a family yet
+}
+
+export interface Family {
+  id: string;
+  name: string;
+  createdBy: string; // uid of the user who created the family
+  members: string[]; // array of user uids
+  inviteCode: string; // unique code to join the family
+  createdAt: string;
+}

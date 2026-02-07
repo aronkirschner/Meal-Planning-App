@@ -1,6 +1,13 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
-import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
+import {
+  getAuth,
+  signInWithPopup,
+  GoogleAuthProvider,
+  signOut as firebaseSignOut,
+  onAuthStateChanged,
+} from 'firebase/auth';
+import type { User } from 'firebase/auth';
 
 const firebaseConfig = {
   apiKey: "AIzaSyBaheO9addOAAEzAFaIFSX8A2dTtWyOBC8",
@@ -16,26 +23,25 @@ const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 
-// Sign in anonymously and return a promise that resolves when auth is ready
-export function initializeAuth(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      unsubscribe();
-      if (user) {
-        console.log('User authenticated:', user.uid);
-        resolve();
-      } else {
-        // Not signed in, sign in anonymously
-        signInAnonymously(auth)
-          .then(() => {
-            console.log('Signed in anonymously');
-            resolve();
-          })
-          .catch((error) => {
-            console.error('Auth error:', error);
-            reject(error);
-          });
-      }
-    });
-  });
+const googleProvider = new GoogleAuthProvider();
+
+// Sign in with Google
+export async function signInWithGoogle(): Promise<User> {
+  const result = await signInWithPopup(auth, googleProvider);
+  return result.user;
+}
+
+// Sign out
+export async function signOut(): Promise<void> {
+  await firebaseSignOut(auth);
+}
+
+// Subscribe to auth state changes
+export function onAuthStateChange(callback: (user: User | null) => void): () => void {
+  return onAuthStateChanged(auth, callback);
+}
+
+// Get current user
+export function getCurrentUser(): User | null {
+  return auth.currentUser;
 }
