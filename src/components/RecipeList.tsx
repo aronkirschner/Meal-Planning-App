@@ -17,6 +17,7 @@ const CATEGORY_LABELS: Record<RecipeCategory, string> = {
 
 export function RecipeList({ recipes, onUpdate, onDelete }: RecipeListProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [filterCategory, setFilterCategory] = useState<RecipeCategory | 'all'>(
     'all'
   );
@@ -45,6 +46,10 @@ export function RecipeList({ recipes, onUpdate, onDelete }: RecipeListProps) {
   const handleUpdate = (recipe: Recipe) => {
     onUpdate(recipe);
     setEditingId(null);
+  };
+
+  const toggleExpanded = (id: string) => {
+    setExpandedId(expandedId === id ? null : id);
   };
 
   return (
@@ -91,7 +96,7 @@ export function RecipeList({ recipes, onUpdate, onDelete }: RecipeListProps) {
                       />
                     </div>
                   ) : (
-                    <div key={recipe.id} className="recipe-card">
+                    <div key={recipe.id} className={`recipe-card ${expandedId === recipe.id ? 'expanded' : ''}`}>
                       <h4>{recipe.name}</h4>
                       <a
                         href={recipe.url}
@@ -99,27 +104,75 @@ export function RecipeList({ recipes, onUpdate, onDelete }: RecipeListProps) {
                         rel="noopener noreferrer"
                         className="recipe-link"
                       >
-                        View Recipe
+                        View Original Recipe
                       </a>
-                      {recipe.ingredients.length > 0 && (
-                        <div className="recipe-ingredients-preview">
-                          <strong>Ingredients:</strong>
-                          <ul>
-                            {recipe.ingredients.slice(0, 3).map((ing, i) => (
-                              <li key={i}>
-                                {ing.amount} {ing.unit} {ing.name}
-                              </li>
-                            ))}
-                            {recipe.ingredients.length > 3 && (
-                              <li>...and {recipe.ingredients.length - 3} more</li>
-                            )}
-                          </ul>
-                        </div>
+
+                      {expandedId === recipe.id ? (
+                        <>
+                          {recipe.ingredients.length > 0 && (
+                            <div className="recipe-section">
+                              <strong>Ingredients:</strong>
+                              <ul className="recipe-ingredients-full">
+                                {recipe.ingredients.map((ing, i) => (
+                                  <li key={i}>
+                                    {ing.amount} {ing.unit} {ing.name}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {recipe.directions && recipe.directions.length > 0 && (
+                            <div className="recipe-section">
+                              <strong>Directions:</strong>
+                              <ol className="recipe-directions-full">
+                                {recipe.directions.map((step, i) => (
+                                  <li key={i}>{step}</li>
+                                ))}
+                              </ol>
+                            </div>
+                          )}
+
+                          {recipe.notes && (
+                            <div className="recipe-section">
+                              <strong>Notes:</strong>
+                              <p className="recipe-notes">{recipe.notes}</p>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          {recipe.ingredients.length > 0 && (
+                            <div className="recipe-ingredients-preview">
+                              <strong>Ingredients:</strong>
+                              <ul>
+                                {recipe.ingredients.slice(0, 3).map((ing, i) => (
+                                  <li key={i}>
+                                    {ing.amount} {ing.unit} {ing.name}
+                                  </li>
+                                ))}
+                                {recipe.ingredients.length > 3 && (
+                                  <li className="more-items">...and {recipe.ingredients.length - 3} more</li>
+                                )}
+                              </ul>
+                            </div>
+                          )}
+
+                          {recipe.directions && recipe.directions.length > 0 && (
+                            <div className="recipe-directions-preview">
+                              <strong>Directions:</strong> {recipe.directions.length} steps
+                            </div>
+                          )}
+                        </>
                       )}
-                      {recipe.notes && (
-                        <p className="recipe-notes">{recipe.notes}</p>
-                      )}
+
                       <div className="recipe-actions">
+                        <button
+                          onClick={() => toggleExpanded(recipe.id)}
+                          className="btn-secondary btn-sm"
+                        >
+                          {expandedId === recipe.id ? 'Collapse' : 'Expand'}
+                        </button>
                         <button
                           onClick={() => setEditingId(recipe.id)}
                           className="btn-secondary btn-sm"

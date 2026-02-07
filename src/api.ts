@@ -10,6 +10,13 @@ export interface ExtractedRecipe {
     amount: number;
     unit: string;
   }>;
+  instructions: string;
+  analyzedInstructions: Array<{
+    steps: Array<{
+      number: number;
+      step: string;
+    }>;
+  }>;
 }
 
 export async function extractRecipeFromUrl(url: string): Promise<ExtractedRecipe> {

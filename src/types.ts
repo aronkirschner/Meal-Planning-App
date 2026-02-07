@@ -12,6 +12,7 @@ export interface Recipe {
   url: string;
   category: RecipeCategory;
   ingredients: Ingredient[];
+  directions: string[];
   notes?: string;
   createdAt: string;
 }

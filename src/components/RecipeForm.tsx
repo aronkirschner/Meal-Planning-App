@@ -18,6 +18,9 @@ export function RecipeForm({ onSave, editRecipe, onCancel }: RecipeFormProps) {
   const [ingredients, setIngredients] = useState<Ingredient[]>(
     editRecipe?.ingredients || []
   );
+  const [directions, setDirections] = useState<string[]>(
+    editRecipe?.directions || []
+  );
   const [notes, setNotes] = useState(editRecipe?.notes || '');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,6 +46,22 @@ export function RecipeForm({ onSave, editRecipe, onCancel }: RecipeFormProps) {
           unit: ing.unit,
         }))
       );
+
+      // Extract directions from analyzedInstructions or plain instructions
+      let extractedDirections: string[] = [];
+      if (data.analyzedInstructions && data.analyzedInstructions.length > 0) {
+        extractedDirections = data.analyzedInstructions[0].steps.map(
+          (step) => step.step
+        );
+      } else if (data.instructions) {
+        // Split plain instructions by sentences or line breaks
+        extractedDirections = data.instructions
+          .split(/(?:\r?\n)+|(?<=\.)\s+/)
+          .map((s) => s.trim())
+          .filter((s) => s.length > 0);
+      }
+      setDirections(extractedDirections);
+
       setIsExtracted(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to extract recipe');
@@ -65,6 +84,7 @@ export function RecipeForm({ onSave, editRecipe, onCancel }: RecipeFormProps) {
       url: url.trim(),
       category,
       ingredients: ingredients.filter((i) => i.name.trim() !== ''),
+      directions,
       notes: notes.trim() || undefined,
       createdAt: editRecipe?.createdAt || new Date().toISOString(),
     };
@@ -76,6 +96,7 @@ export function RecipeForm({ onSave, editRecipe, onCancel }: RecipeFormProps) {
       setName('');
       setCategory('main');
       setIngredients([]);
+      setDirections([]);
       setNotes('');
       setIsExtracted(false);
     }
@@ -152,6 +173,17 @@ export function RecipeForm({ onSave, editRecipe, onCancel }: RecipeFormProps) {
               ))}
             </ul>
           </div>
+
+          {directions.length > 0 && (
+            <div className="form-group">
+              <label>Directions ({directions.length} steps)</label>
+              <ol className="extracted-directions">
+                {directions.map((step, index) => (
+                  <li key={index}>{step}</li>
+                ))}
+              </ol>
+            </div>
+          )}
 
           <div className="form-group">
             <label htmlFor="notes">Notes (optional)</label>
