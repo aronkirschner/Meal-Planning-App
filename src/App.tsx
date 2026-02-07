@@ -13,6 +13,7 @@ import {
 import { AuthProvider, useAuth } from './AuthContext';
 import { Login } from './components/Login';
 import { FamilyManager } from './components/FamilyManager';
+import { InviteModal } from './components/InviteModal';
 import { RecipeForm } from './components/RecipeForm';
 import { RecipeList } from './components/RecipeList';
 import { WeekPlanner } from './components/WeekPlanner';
@@ -41,7 +42,7 @@ function MealPlannerApp() {
   const [currentWeekPlan, setCurrentWeekPlan] = useState<WeekPlan | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [dataLoading, setDataLoading] = useState(true);
-  const [showInviteCode, setShowInviteCode] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
 
   // Load family data if user has a familyId
   useEffect(() => {
@@ -189,18 +190,20 @@ function MealPlannerApp() {
         <h1>Meal Planner</h1>
         <p className="subtitle">{family.name}</p>
         <button
-          onClick={() => setShowInviteCode(!showInviteCode)}
+          onClick={() => setShowInviteModal(true)}
           className="btn-link invite-toggle"
         >
-          {showInviteCode ? 'Hide Invite Code' : 'Invite Family Members'}
+          Invite Family Members
         </button>
-        {showInviteCode && (
-          <div className="invite-code-display">
-            <p>Share this code with family members:</p>
-            <code className="invite-code">{family.inviteCode}</code>
-          </div>
-        )}
       </header>
+
+      {showInviteModal && (
+        <InviteModal
+          inviteCode={family.inviteCode}
+          familyName={family.name}
+          onClose={() => setShowInviteModal(false)}
+        />
+      )}
 
       <nav className="app-nav">
         <button
