@@ -1,4 +1,4 @@
-const API_KEY = 'cac21a82596f96a4837069aad44b25a93dbc84f6';
+const API_KEY = 'e3e2e44262e949b5b44ec5443fc3e25f';
 const BASE_URL = 'https://api.spoonacular.com';
 
 export interface ExtractedRecipe {
