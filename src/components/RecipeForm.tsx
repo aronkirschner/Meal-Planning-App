@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Recipe, RecipeCategory, Ingredient } from '../types';
-import { generateId } from '../storage';
+import { generateId } from '../firestore-storage';
 import { extractRecipeFromUrl } from '../api';
 
 interface RecipeFormProps {

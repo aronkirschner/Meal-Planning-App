@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import type { Recipe, WeekPlan } from './types';
 import {
-  getRecipes,
   addRecipe,
   updateRecipe,
   deleteRecipe,
-  getWeekPlan,
   saveWeekPlan,
-} from './storage';
+  subscribeToRecipes,
+  subscribeToWeekPlans,
+} from './firestore-storage';
 import { RecipeForm } from './components/RecipeForm';
 import { RecipeList } from './components/RecipeList';
 import { WeekPlanner } from './components/WeekPlanner';
@@ -34,38 +34,56 @@ function App() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [currentWeekPlan, setCurrentWeekPlan] = useState<WeekPlan | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [loading, setLoading] = useState(true);
 
+  // Subscribe to real-time updates
   useEffect(() => {
-    const loadedRecipes = getRecipes();
-    setRecipes(loadedRecipes);
+    const unsubRecipes = subscribeToRecipes((updatedRecipes) => {
+      setRecipes(updatedRecipes);
+      setLoading(false);
+    });
 
-    const weekStart = formatDate(getMonday(new Date()));
-    const plan = getWeekPlan(weekStart);
-    if (plan) {
-      setCurrentWeekPlan(plan);
-    }
+    const unsubPlans = subscribeToWeekPlans((updatedPlans) => {
+      // Find the current week's plan
+      const weekStart = formatDate(getMonday(new Date()));
+      const plan = updatedPlans.find((p) => p.weekStart === weekStart);
+      if (plan) {
+        setCurrentWeekPlan(plan);
+      }
+    });
+
+    // Cleanup subscriptions on unmount
+    return () => {
+      unsubRecipes();
+      unsubPlans();
+    };
   }, []);
 
-  const handleAddRecipe = (recipe: Recipe) => {
-    addRecipe(recipe);
-    setRecipes(getRecipes());
+  const handleAddRecipe = async (recipe: Recipe) => {
+    await addRecipe(recipe);
     setShowAddForm(false);
   };
 
-  const handleUpdateRecipe = (recipe: Recipe) => {
-    updateRecipe(recipe);
-    setRecipes(getRecipes());
+  const handleUpdateRecipe = async (recipe: Recipe) => {
+    await updateRecipe(recipe);
   };
 
-  const handleDeleteRecipe = (id: string) => {
-    deleteRecipe(id);
-    setRecipes(getRecipes());
+  const handleDeleteRecipe = async (id: string) => {
+    await deleteRecipe(id);
   };
 
-  const handleSaveWeekPlan = (plan: WeekPlan) => {
-    saveWeekPlan(plan);
+  const handleSaveWeekPlan = async (plan: WeekPlan) => {
+    await saveWeekPlan(plan);
     setCurrentWeekPlan(plan);
   };
+
+  if (loading) {
+    return (
+      <div className="app">
+        <div className="loading">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="app">
@@ -142,7 +160,7 @@ function App() {
       </main>
 
       <footer className="app-footer">
-        <p>Data is stored locally in your browser</p>
+        <p>Data syncs across all your devices</p>
       </footer>
     </div>
   );

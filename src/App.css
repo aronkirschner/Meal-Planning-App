@@ -26,6 +26,15 @@
   color: var(--text-secondary);
 }
 
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 50vh;
+  font-size: 1.2rem;
+  color: var(--text-secondary);
+}
+
 /* Navigation */
 .app-nav {
   display: flex;

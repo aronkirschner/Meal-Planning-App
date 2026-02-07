@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import type { Recipe, WeekPlan, DayMeal, DayOfWeek } from '../types';
 import { DAYS_OF_WEEK } from '../types';
-import { generateId } from '../storage';
+import { generateId } from '../firestore-storage';
 
 interface WeekPlannerProps {
   recipes: Recipe[];
