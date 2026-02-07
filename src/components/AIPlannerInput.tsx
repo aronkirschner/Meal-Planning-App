@@ -20,6 +20,7 @@ export function AIPlannerInput({ recipes, onPlanGenerated }: AIPlannerInputProps
   const [prompt, setPrompt] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
   const handleGenerate = async () => {
@@ -30,8 +31,10 @@ export function AIPlannerInput({ recipes, onPlanGenerated }: AIPlannerInputProps
 
     setIsLoading(true);
     setError(null);
+    setSuccess(false);
 
     try {
+      console.log('Sending request to /api/generate-plan...');
       const response = await fetch('/api/generate-plan', {
         method: 'POST',
         headers: {
@@ -47,18 +50,28 @@ export function AIPlannerInput({ recipes, onPlanGenerated }: AIPlannerInputProps
         }),
       });
 
+      console.log('Response status:', response.status);
+
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('API error:', errorData);
         throw new Error(errorData.error || 'Failed to generate plan');
       }
 
       const data = await response.json();
+      console.log('Generated plan:', data.plan);
       const plan = data.plan as GeneratedPlan;
 
       // Convert to the format expected by WeekPlanner
       onPlanGenerated(plan);
       setPrompt('');
-      setIsExpanded(false);
+      setSuccess(true);
+
+      // Auto-close after showing success
+      setTimeout(() => {
+        setIsExpanded(false);
+        setSuccess(false);
+      }, 1500);
     } catch (err) {
       console.error('Error generating plan:', err);
       setError(err instanceof Error ? err.message : 'Failed to generate meal plan');
@@ -104,6 +117,7 @@ export function AIPlannerInput({ recipes, onPlanGenerated }: AIPlannerInputProps
       </ul>
 
       {error && <div className="ai-error">{error}</div>}
+      {success && <div className="ai-success">Plan generated! Check the week below.</div>}
 
       <textarea
         value={prompt}
