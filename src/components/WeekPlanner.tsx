@@ -10,11 +10,10 @@ interface WeekPlannerProps {
   onSave: (plan: WeekPlan) => void;
 }
 
-function getMonday(date: Date): Date {
+function getSunday(date: Date): Date {
   const d = new Date(date);
   const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  d.setDate(diff);
+  d.setDate(d.getDate() - day);
   d.setHours(0, 0, 0, 0);
   return d;
 }
@@ -34,13 +33,13 @@ function formatDisplayDate(date: Date): string {
 }
 
 const DAY_LABELS: Record<DayOfWeek, string> = {
+  sunday: 'Sunday',
   monday: 'Monday',
   tuesday: 'Tuesday',
   wednesday: 'Wednesday',
   thursday: 'Thursday',
   friday: 'Friday',
   saturday: 'Saturday',
-  sunday: 'Sunday',
 };
 
 const CUSTOM_PREFIX = 'custom:';
@@ -118,7 +117,7 @@ export function WeekPlanner({ recipes, weekPlan, onSave }: WeekPlannerProps) {
     if (weekPlan) {
       return new Date(weekPlan.weekStart);
     }
-    return getMonday(new Date());
+    return getSunday(new Date());
   });
 
   const emptyDays: WeekPlan['days'] = {
@@ -186,7 +185,7 @@ export function WeekPlanner({ recipes, weekPlan, onSave }: WeekPlannerProps) {
   };
 
   const handleCurrentWeek = () => {
-    setCurrentWeekStart(getMonday(new Date()));
+    setCurrentWeekStart(getSunday(new Date()));
     setDays(emptyDays);
   };
 

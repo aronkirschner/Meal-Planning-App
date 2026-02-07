@@ -22,11 +22,10 @@ import './App.css';
 
 type Tab = 'recipes' | 'planner' | 'shopping';
 
-function getMonday(date: Date): Date {
+function getSunday(date: Date): Date {
   const d = new Date(date);
   const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  d.setDate(diff);
+  d.setDate(d.getDate() - day);
   d.setHours(0, 0, 0, 0);
   return d;
 }
@@ -70,7 +69,7 @@ function MealPlannerApp() {
 
       // Fetch week plans
       const fetchedPlans = await getWeekPlans(family.id);
-      const weekStart = formatDate(getMonday(new Date()));
+      const weekStart = formatDate(getSunday(new Date()));
       const plan = fetchedPlans.find((p) => p.weekStart === weekStart);
       if (plan) {
         setCurrentWeekPlan(plan);
