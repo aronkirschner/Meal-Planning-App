@@ -18,7 +18,16 @@ export async function extractRecipeFromUrl(url: string): Promise<ExtractedRecipe
   );
 
   if (!response.ok) {
-    throw new Error('Failed to extract recipe. Please check the URL and try again.');
+    const errorData = await response.json().catch(() => ({}));
+    console.error('API Error:', response.status, errorData);
+
+    if (response.status === 401) {
+      throw new Error('Invalid API key. Please check your Spoonacular API key.');
+    } else if (response.status === 402) {
+      throw new Error('API quota exceeded. Daily limit reached.');
+    } else {
+      throw new Error(`API Error (${response.status}): ${errorData.message || 'Please check the URL and try again.'}`);
+    }
   }
 
   const data = await response.json();
