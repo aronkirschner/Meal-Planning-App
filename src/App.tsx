@@ -13,6 +13,7 @@ import { AuthProvider, useAuth } from './AuthContext';
 import { Login } from './components/Login';
 import { FamilyManager } from './components/FamilyManager';
 import { InviteModal } from './components/InviteModal';
+import { PaprikaImport } from './components/PaprikaImport';
 import { RecipeForm } from './components/RecipeForm';
 import { RecipeList } from './components/RecipeList';
 import { WeekPlanner } from './components/WeekPlanner';
@@ -42,6 +43,7 @@ function MealPlannerApp() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [dataLoading, setDataLoading] = useState(true);
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showPaprikaImport, setShowPaprikaImport] = useState(false);
 
   // Load family data if user has a familyId
   useEffect(() => {
@@ -140,6 +142,19 @@ function MealPlannerApp() {
     setFamily(selectedFamily);
   };
 
+  const handleImportRecipes = async (recipesToImport: Recipe[]) => {
+    if (!family) return;
+
+    // Import recipes one by one
+    for (const recipe of recipesToImport) {
+      await addRecipe(family.id, recipe);
+    }
+
+    // Refresh the recipes list
+    const fetchedRecipes = await getRecipes(family.id);
+    setRecipes(fetchedRecipes);
+  };
+
   // Show loading state
   if (authLoading) {
     return (
@@ -230,13 +245,28 @@ function MealPlannerApp() {
           <div className="recipes-tab">
             <div className="tab-header">
               <h2>Your Recipes</h2>
-              <button
-                onClick={() => setShowAddForm(!showAddForm)}
-                className="btn-primary"
-              >
-                {showAddForm ? 'Cancel' : '+ Add Recipe'}
-              </button>
+              <div className="tab-header-actions">
+                <button
+                  onClick={() => setShowPaprikaImport(true)}
+                  className="btn-secondary"
+                >
+                  Import from Paprika
+                </button>
+                <button
+                  onClick={() => setShowAddForm(!showAddForm)}
+                  className="btn-primary"
+                >
+                  {showAddForm ? 'Cancel' : '+ Add Recipe'}
+                </button>
+              </div>
             </div>
+
+            {showPaprikaImport && (
+              <PaprikaImport
+                onImport={handleImportRecipes}
+                onClose={() => setShowPaprikaImport(false)}
+              />
+            )}
 
             {showAddForm && (
               <RecipeForm

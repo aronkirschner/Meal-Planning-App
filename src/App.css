@@ -401,6 +401,166 @@
   overflow-y: auto;
 }
 
+/* Paprika Import */
+.paprika-import-modal {
+  max-width: 600px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.paprika-import-body {
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.import-instructions {
+  margin-bottom: 1.5rem;
+}
+
+.import-instructions p {
+  margin: 0 0 0.5rem;
+}
+
+.import-instructions .hint {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.import-instructions code {
+  background: var(--bg-primary);
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.file-select-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.file-count {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.import-error {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+.parsed-recipes-header {
+  margin-bottom: 1rem;
+}
+
+.parsed-recipes-header h4 {
+  margin: 0 0 0.25rem;
+}
+
+.parsed-recipes-header .hint {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.parsed-recipes-list {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.parsed-recipe-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.parsed-recipe-item:last-child {
+  border-bottom: none;
+}
+
+.recipe-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.recipe-name {
+  display: block;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.recipe-meta {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.category-select {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 0.85rem;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.btn-remove-small {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.25rem;
+  line-height: 1;
+}
+
+.btn-remove-small:hover {
+  color: #dc3545;
+}
+
+.import-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.import-result {
+  text-align: center;
+  padding: 2rem 0;
+}
+
+.result-icon {
+  font-size: 3rem;
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+}
+
+.import-result h4 {
+  margin: 0 0 0.5rem;
+}
+
+.failed-count {
+  color: #dc3545;
+  margin: 0 0 1rem;
+}
+
+.tab-header-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
 .loading {
   display: flex;
   justify-content: center;
