@@ -10,13 +10,13 @@ import {
 import type { User } from 'firebase/auth';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBaheO9addOAAEzAFaIFSX8A2dTtWyOBC8",
-  authDomain: "ak-ji-meal-planning-app.firebaseapp.com",
-  projectId: "ak-ji-meal-planning-app",
-  storageBucket: "ak-ji-meal-planning-app.firebasestorage.app",
-  messagingSenderId: "330062156014",
-  appId: "1:330062156014:web:8fb13d998013e6bde0a3ff",
-  measurementId: "G-3X3YWB5ZRK"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
 const app = initializeApp(firebaseConfig);
