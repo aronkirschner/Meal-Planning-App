@@ -79,10 +79,12 @@ Return a JSON object with this exact structure:
 }
 
 Rules:
-- Use the exact recipe ID for matching recipes
-- Use "custom:Description" for custom/new items (e.g., "custom:Leftover salmon")
-- Leave fields empty (don't include the key) if not specified
+- ALWAYS fill in main, vegetable, and grain for ALL 7 days of the week - never leave these empty
+- Use the exact recipe ID for matching recipes from the available list
+- Use "custom:Description" for items not in the recipe list (e.g., "custom:Grilled chicken", "custom:Steamed broccoli", "custom:White rice")
 - Be smart about interpreting the user's intent (e.g., "fish" could match "Salmon")
+- If the user mentions specific meals, use those. For unspecified days, create a balanced variety using available recipes and custom items
+- The "other" field is optional and can be left empty if not specified
 - Only return the JSON object, no other text`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
