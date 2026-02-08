@@ -64,12 +64,12 @@ OTHER: ${recipesByCategory.other.map(r => `"${r.name}" (id: ${r.id})`).join(', '
 
 Your task:
 1. Parse the user's meal planning request
-2. Match their requests to available recipes when possible
-3. For requests that don't match existing recipes, create custom entries with prefix "custom:"
+2. Match their requests to available recipes using fuzzy matching (e.g., "chicken" matches any chicken dish)
+3. Fill ALL days with recipes from the available list
 
 Return a JSON object with this exact structure:
 {
-  "monday": { "main": "recipe-id or custom:description", "vegetable": "...", "grain": "...", "other": "..." },
+  "monday": { "main": "recipe-id", "vegetable": "recipe-id", "grain": "recipe-id", "other": "recipe-id" },
   "tuesday": { ... },
   "wednesday": { ... },
   "thursday": { ... },
@@ -80,10 +80,10 @@ Return a JSON object with this exact structure:
 
 Rules:
 - ALWAYS fill in main, vegetable, and grain for ALL 7 days of the week - never leave these empty
-- Use the exact recipe ID for matching recipes from the available list
-- Use "custom:Description" for items not in the recipe list (e.g., "custom:Grilled chicken", "custom:Steamed broccoli", "custom:White rice")
-- Be smart about interpreting the user's intent (e.g., "fish" could match "Salmon")
-- If the user mentions specific meals, use those. For unspecified days, create a balanced variety using available recipes and custom items
+- ONLY use recipe IDs from the available recipes list - never create custom entries
+- Do fuzzy matching: if user says "chicken", match any chicken recipe; "fish" matches salmon, tilapia, etc.
+- If the user mentions specific meals, use those. For unspecified days, create a balanced variety from available recipes
+- Try not to repeat the same recipe too many times in a week unless necessary
 - The "other" field is optional and can be left empty if not specified
 - Only return the JSON object, no other text`;
 
