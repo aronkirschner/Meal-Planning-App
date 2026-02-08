@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import type { Recipe, WeekPlan, DayMeal, DayOfWeek } from '../types';
 import { DAYS_OF_WEEK } from '../types';
 import { generateId } from '../firestore-storage';
@@ -55,6 +55,11 @@ function MealSelector({ label, value, recipes, onChange }: MealSelectorProps) {
   const isCustom = value.startsWith(CUSTOM_PREFIX);
   const customText = isCustom ? value.slice(CUSTOM_PREFIX.length) : '';
   const [showCustomInput, setShowCustomInput] = useState(isCustom);
+
+  // Sync showCustomInput when value prop changes externally (e.g., AI plan generation)
+  useEffect(() => {
+    setShowCustomInput(value.startsWith(CUSTOM_PREFIX));
+  }, [value]);
 
   const handleSelectChange = (newValue: string) => {
     if (newValue === '__custom__') {

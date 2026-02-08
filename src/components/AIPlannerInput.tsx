@@ -68,6 +68,16 @@ export function AIPlannerInput({ recipes, onPlanGenerated }: AIPlannerInputProps
         nameToId[r.name.toLowerCase()] = r.id;
       });
 
+      // Normalize a string for fuzzy matching: lowercase, strip non-alphanumeric, collapse whitespace
+      const normalize = (s: string) =>
+        s.toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
+
+      // Build a normalized lookup map
+      const normalizedNameToId: Record<string, string> = {};
+      recipes.forEach(r => {
+        normalizedNameToId[normalize(r.name)] = r.id;
+      });
+
       // Convert recipe names to IDs in the plan
       const convertMeal = (meal: DayMeal): DayMeal => {
         const converted: DayMeal = {};
@@ -79,10 +89,19 @@ export function AIPlannerInput({ recipes, onPlanGenerated }: AIPlannerInputProps
             if (existingRecipe) {
               converted[key] = value;
             } else {
-              // Try to find by name (case-insensitive)
+              // Try to find by name (case-insensitive exact match)
               const id = nameToId[value.toLowerCase()];
               if (id) {
                 converted[key] = id;
+              } else {
+                // Try normalized match (handles accents, punctuation differences)
+                const normalizedId = normalizedNameToId[normalize(value)];
+                if (normalizedId) {
+                  converted[key] = normalizedId;
+                } else {
+                  // Fallback: use as custom entry so AI suggestion is still visible
+                  converted[key] = 'custom:' + value;
+                }
               }
             }
           }
