@@ -62,8 +62,46 @@ export function AIPlannerInput({ recipes, onPlanGenerated }: AIPlannerInputProps
       console.log('Generated plan:', data.plan);
       const plan = data.plan as GeneratedPlan;
 
-      // Convert to the format expected by WeekPlanner
-      onPlanGenerated(plan);
+      // Build a lookup map from recipe name (lowercase) to ID
+      const nameToId: Record<string, string> = {};
+      recipes.forEach(r => {
+        nameToId[r.name.toLowerCase()] = r.id;
+      });
+
+      // Convert recipe names to IDs in the plan
+      const convertMeal = (meal: DayMeal): DayMeal => {
+        const converted: DayMeal = {};
+        for (const key of ['main', 'vegetable', 'grain', 'other'] as const) {
+          const value = meal[key];
+          if (value) {
+            // Check if it's already an ID (exists in recipes)
+            const existingRecipe = recipes.find(r => r.id === value);
+            if (existingRecipe) {
+              converted[key] = value;
+            } else {
+              // Try to find by name (case-insensitive)
+              const id = nameToId[value.toLowerCase()];
+              if (id) {
+                converted[key] = id;
+              }
+            }
+          }
+        }
+        return converted;
+      };
+
+      const convertedPlan: GeneratedPlan = {
+        monday: convertMeal(plan.monday),
+        tuesday: convertMeal(plan.tuesday),
+        wednesday: convertMeal(plan.wednesday),
+        thursday: convertMeal(plan.thursday),
+        friday: convertMeal(plan.friday),
+        saturday: convertMeal(plan.saturday),
+        sunday: convertMeal(plan.sunday),
+      };
+
+      console.log('Converted plan:', convertedPlan);
+      onPlanGenerated(convertedPlan);
       setPrompt('');
       setSuccess(true);
 
