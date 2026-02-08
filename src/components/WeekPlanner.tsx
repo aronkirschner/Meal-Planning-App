@@ -100,12 +100,12 @@ function MealSelector({ label, value, recipes, onChange }: MealSelectorProps) {
           onChange={(e) => handleSelectChange(e.target.value)}
         >
           <option value="">-- Select --</option>
+          <option value="__custom__">Custom...</option>
           {recipes.map((r) => (
             <option key={r.id} value={r.id}>
               {r.name}
             </option>
           ))}
-          <option value="__custom__">Custom...</option>
         </select>
       )}
     </div>
