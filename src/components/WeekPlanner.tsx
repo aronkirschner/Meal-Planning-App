@@ -8,6 +8,7 @@ interface WeekPlannerProps {
   recipes: Recipe[];
   weekPlan: WeekPlan | null;
   onSave: (plan: WeekPlan) => void;
+  onLoadWeekPlan?: (weekStart: string) => Promise<WeekPlan | undefined>;
 }
 
 function getSunday(date: Date): Date {
@@ -117,7 +118,7 @@ function MealSelector({ label, value, recipes, onChange }: MealSelectorProps) {
   );
 }
 
-export function WeekPlanner({ recipes, weekPlan, onSave }: WeekPlannerProps) {
+export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan }: WeekPlannerProps) {
   const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => {
     if (weekPlan) {
       return new Date(weekPlan.weekStart);
@@ -179,19 +180,26 @@ export function WeekPlanner({ recipes, weekPlan, onSave }: WeekPlannerProps) {
     onSave(plan);
   };
 
+  const navigateToWeek = async (newWeekStart: Date) => {
+    setCurrentWeekStart(newWeekStart);
+    if (onLoadWeekPlan) {
+      const plan = await onLoadWeekPlan(formatDate(newWeekStart));
+      setDays(plan?.days || emptyDays);
+    } else {
+      setDays(emptyDays);
+    }
+  };
+
   const handlePreviousWeek = () => {
-    setCurrentWeekStart((prev) => addDays(prev, -7));
-    setDays(emptyDays);
+    navigateToWeek(addDays(currentWeekStart, -7));
   };
 
   const handleNextWeek = () => {
-    setCurrentWeekStart((prev) => addDays(prev, 7));
-    setDays(emptyDays);
+    navigateToWeek(addDays(currentWeekStart, 7));
   };
 
   const handleCurrentWeek = () => {
-    setCurrentWeekStart(getSunday(new Date()));
-    setDays(emptyDays);
+    navigateToWeek(getSunday(new Date()));
   };
 
   const handleAIPlanGenerated = (plan: Record<DayOfWeek, DayMeal>) => {

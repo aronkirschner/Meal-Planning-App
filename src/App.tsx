@@ -7,6 +7,7 @@ import {
   saveWeekPlan,
   getRecipes,
   getWeekPlans,
+  getWeekPlan,
   getFamily,
 } from './firestore-storage';
 import { AuthProvider, useAuth } from './AuthContext';
@@ -136,6 +137,11 @@ function MealPlannerApp() {
       console.error('Failed to save week plan:', error);
       alert('Failed to save week plan. Check console for details.');
     }
+  };
+
+  const handleLoadWeekPlan = async (weekStart: string) => {
+    if (!family) return undefined;
+    return await getWeekPlan(family.id, weekStart);
   };
 
   const handleFamilySelected = (selectedFamily: Family) => {
@@ -302,6 +308,7 @@ function MealPlannerApp() {
               recipes={recipes}
               weekPlan={currentWeekPlan}
               onSave={handleSaveWeekPlan}
+              onLoadWeekPlan={handleLoadWeekPlan}
             />
           </div>
         )}
