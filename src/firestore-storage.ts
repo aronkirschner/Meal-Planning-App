@@ -1,5 +1,6 @@
 import {
   collection,
+  collectionGroup,
   doc,
   getDoc,
   getDocs,
@@ -195,6 +196,31 @@ export function subscribeToRecipes(
   );
 
   return unsubscribe;
+}
+
+// Get all recipes from other families (community browsing)
+export async function getCommunityRecipes(
+  excludeFamilyId: string
+): Promise<{ recipe: Recipe; familyId: string }[]> {
+  const recipesRef = collectionGroup(db, 'recipes');
+  const snapshot = await getDocs(recipesRef);
+
+  const results: { recipe: Recipe; familyId: string }[] = [];
+  snapshot.docs.forEach((docSnap) => {
+    const familyId = docSnap.ref.parent.parent?.id;
+    if (familyId && familyId !== excludeFamilyId) {
+      results.push({
+        recipe: docSnap.data() as Recipe,
+        familyId,
+      });
+    }
+  });
+
+  return results.sort(
+    (a, b) =>
+      new Date(b.recipe.createdAt).getTime() -
+      new Date(a.recipe.createdAt).getTime()
+  );
 }
 
 // ============ Week Plan Operations (scoped by family) ============

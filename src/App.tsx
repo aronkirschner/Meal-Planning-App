@@ -18,9 +18,10 @@ import { RecipeForm } from './components/RecipeForm';
 import { RecipeList } from './components/RecipeList';
 import { WeekPlanner } from './components/WeekPlanner';
 import { ShoppingList } from './components/ShoppingList';
+import { CommunityRecipes } from './components/CommunityRecipes';
 import './App.css';
 
-type Tab = 'recipes' | 'planner' | 'shopping';
+type Tab = 'recipes' | 'planner' | 'shopping' | 'community';
 
 function getSunday(date: Date): Date {
   const d = new Date(date);
@@ -141,6 +142,12 @@ function MealPlannerApp() {
     setFamily(selectedFamily);
   };
 
+  const handleCommunityRecipeAdded = async () => {
+    if (!family) return;
+    const fetchedRecipes = await getRecipes(family.id);
+    setRecipes(fetchedRecipes);
+  };
+
   const handleImportRecipes = async (recipesToImport: Recipe[]) => {
     if (!family) return;
 
@@ -237,6 +244,12 @@ function MealPlannerApp() {
         >
           Shopping List
         </button>
+        <button
+          className={`nav-btn ${activeTab === 'community' ? 'active' : ''}`}
+          onClick={() => setActiveTab('community')}
+        >
+          Community Recipes
+        </button>
       </nav>
 
       <main className="app-content">
@@ -296,6 +309,16 @@ function MealPlannerApp() {
         {activeTab === 'shopping' && (
           <div className="shopping-tab">
             <ShoppingList recipes={recipes} weekPlan={currentWeekPlan} />
+          </div>
+        )}
+
+        {activeTab === 'community' && (
+          <div className="community-tab">
+            <h2>Community Recipes</h2>
+            <CommunityRecipes
+              familyId={family.id}
+              onRecipeAdded={handleCommunityRecipeAdded}
+            />
           </div>
         )}
       </main>
