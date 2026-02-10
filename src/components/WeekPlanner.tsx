@@ -140,6 +140,14 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan }: WeekP
     weekPlan?.days || emptyDays
   );
 
+  // Sync days when weekPlan prop loads asynchronously
+  useEffect(() => {
+    if (weekPlan?.days) {
+      setDays(weekPlan.days);
+      setCurrentWeekStart(new Date(weekPlan.weekStart));
+    }
+  }, [weekPlan]);
+
   const mainRecipes = useMemo(
     () => recipes.filter((r) => r.category === 'main'),
     [recipes]
