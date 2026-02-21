@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import type { Recipe, WeekPlan, DayMeal, DayOfWeek } from '../types';
 import { DAYS_OF_WEEK } from '../types';
 import { generateId } from '../firestore-storage';
@@ -56,13 +56,41 @@ function MealSelector({ label, value, recipes, onChange }: MealSelectorProps) {
   const isCustom = value.startsWith(CUSTOM_PREFIX);
   const customText = isCustom ? value.slice(CUSTOM_PREFIX.length) : '';
   const [showCustomInput, setShowCustomInput] = useState(isCustom);
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const containerRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Sync showCustomInput when value prop changes externally (e.g., AI plan generation)
   useEffect(() => {
     setShowCustomInput(value.startsWith(CUSTOM_PREFIX));
   }, [value]);
 
-  const handleSelectChange = (newValue: string) => {
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+        setSearch('');
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [isOpen]);
+
+  // Focus search input when dropdown opens
+  useEffect(() => {
+    if (isOpen && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [isOpen]);
+
+  const handleCustomTextChange = (text: string) => {
+    onChange(CUSTOM_PREFIX + text);
+  };
+
+  const handleSelect = (newValue: string) => {
     if (newValue === '__custom__') {
       setShowCustomInput(true);
       onChange(CUSTOM_PREFIX);
@@ -70,14 +98,24 @@ function MealSelector({ label, value, recipes, onChange }: MealSelectorProps) {
       setShowCustomInput(false);
       onChange(newValue);
     }
+    setIsOpen(false);
+    setSearch('');
   };
 
-  const handleCustomTextChange = (text: string) => {
-    onChange(CUSTOM_PREFIX + text);
-  };
+  const selectedName = useMemo(() => {
+    if (!value || isCustom) return null;
+    const recipe = recipes.find((r) => r.id === value);
+    return recipe?.name || null;
+  }, [value, recipes, isCustom]);
+
+  const filteredRecipes = useMemo(() => {
+    if (!search) return recipes;
+    const lower = search.toLowerCase();
+    return recipes.filter((r) => r.name.toLowerCase().includes(lower));
+  }, [recipes, search]);
 
   return (
-    <div className="meal-selector">
+    <div className="meal-selector" ref={containerRef}>
       <label>{label}</label>
       {showCustomInput ? (
         <div className="custom-input-group">
@@ -101,18 +139,65 @@ function MealSelector({ label, value, recipes, onChange }: MealSelectorProps) {
           </button>
         </div>
       ) : (
-        <select
-          value={value || ''}
-          onChange={(e) => handleSelectChange(e.target.value)}
-        >
-          <option value="">-- Select --</option>
-          <option value="__custom__">Custom...</option>
-          {recipes.map((r) => (
-            <option key={r.id} value={r.id}>
-              {r.name}
-            </option>
-          ))}
-        </select>
+        <div className="searchable-select">
+          <button
+            type="button"
+            className="searchable-select-trigger"
+            onClick={() => setIsOpen(!isOpen)}
+          >
+            <span className={selectedName ? 'select-value' : 'select-placeholder'}>
+              {selectedName || '-- Select --'}
+            </span>
+            <span className="select-arrow">{isOpen ? '\u25B2' : '\u25BC'}</span>
+          </button>
+          {isOpen && (
+            <div className="searchable-select-dropdown">
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search..."
+                className="searchable-select-search"
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') {
+                    setIsOpen(false);
+                    setSearch('');
+                  }
+                }}
+              />
+              <div className="searchable-select-options">
+                <button
+                  type="button"
+                  className="searchable-select-option option-clear"
+                  onClick={() => handleSelect('')}
+                >
+                  -- Clear --
+                </button>
+                <button
+                  type="button"
+                  className="searchable-select-option option-custom"
+                  onClick={() => handleSelect('__custom__')}
+                >
+                  Custom...
+                </button>
+                {filteredRecipes.map((r) => (
+                  <button
+                    type="button"
+                    key={r.id}
+                    className={`searchable-select-option${r.id === value ? ' option-selected' : ''}`}
+                    onClick={() => handleSelect(r.id)}
+                  >
+                    {r.name}
+                  </button>
+                ))}
+                {filteredRecipes.length === 0 && search && (
+                  <div className="searchable-select-empty">No recipes found</div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
