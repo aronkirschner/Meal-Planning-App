@@ -1589,6 +1589,262 @@
   color: var(--text-secondary);
 }
 
+/* CSV Import Preview Modal */
+.csv-import-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.csv-import-modal {
+  background: var(--bg-secondary);
+  border-radius: 16px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-color);
+}
+
+.csv-import-preview-modal {
+  max-width: 700px;
+}
+
+.csv-import-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.csv-import-header h3 {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.csv-import-body {
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.csv-import-instructions p {
+  margin: 0 0 0.75rem;
+  color: var(--text-primary);
+}
+
+.csv-format-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 0.75rem;
+  font-size: 0.85rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.csv-format-table th {
+  background: var(--bg-primary);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  font-weight: 500;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+.csv-format-table td {
+  padding: 0.4rem 0.75rem;
+  border-top: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  font-size: 0.8rem;
+}
+
+.optional-label {
+  font-weight: 400;
+  font-style: italic;
+  opacity: 0.7;
+}
+
+.csv-import-hint {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.csv-import-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.csv-file-label {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+
+.csv-import-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-primary);
+}
+
+.match-stat {
+  font-size: 0.8rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+.match-exact {
+  background: #d4edda;
+  color: #155724;
+}
+
+.match-fuzzy {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.match-unmatched {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.match-total {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.csv-import-mappings {
+  padding: 0 !important;
+  overflow-y: auto;
+  max-height: 50vh;
+}
+
+.mapping-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.mapping-row:last-child {
+  border-bottom: none;
+}
+
+.mapping-exact {
+  background: rgba(212, 237, 218, 0.15);
+}
+
+.mapping-fuzzy {
+  background: rgba(255, 243, 205, 0.15);
+}
+
+.mapping-unmatched {
+  background: rgba(248, 215, 218, 0.15);
+}
+
+.mapping-csv-name {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 180px;
+}
+
+.match-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  font-size: 0.8rem;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.match-indicator-exact {
+  background: #d4edda;
+  color: #155724;
+}
+
+.match-indicator-fuzzy {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.match-indicator-unmatched {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.mapping-name {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.mapping-count {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.mapping-action {
+  flex: 1;
+  min-width: 200px;
+}
+
+.mapping-matched-to {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.mapping-select-group select {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.csv-import-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.csv-import-done {
+  text-align: center;
+}
+
+.import-done-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
   .week-grid {

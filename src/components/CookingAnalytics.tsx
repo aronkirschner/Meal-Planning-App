@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import type { Recipe, WeekPlan, RecipeCategory, DayMeal } from '../types';
 import { getWeekPlans } from '../firestore-storage';
+import { CSVImportPreview } from './CSVImportPreview';
 
 interface CookingAnalyticsProps {
   recipes: Recipe[];
@@ -63,21 +64,28 @@ export function CookingAnalytics({ recipes, familyId }: CookingAnalyticsProps) {
   const [weekPlans, setWeekPlans] = useState<WeekPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
+  const [showImport, setShowImport] = useState(false);
+
+  const loadPlans = async () => {
+    setLoading(true);
+    try {
+      const plans = await getWeekPlans(familyId);
+      setWeekPlans(plans);
+    } catch (err) {
+      console.error('Error loading week plans:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      try {
-        const plans = await getWeekPlans(familyId);
-        setWeekPlans(plans);
-      } catch (err) {
-        console.error('Error loading week plans:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
+    loadPlans();
   }, [familyId]);
+
+  const handleImportComplete = async () => {
+    setShowImport(false);
+    await loadPlans();
+  };
 
   const filteredPlans = useMemo(() => {
     if (timeFilter === 'all') return weekPlans;
@@ -152,6 +160,28 @@ const recipeCounts = useMemo(
 
   return (
     <div className="cooking-analytics">
+      {showImport && (
+        <CSVImportPreview
+          recipes={recipes}
+          existingPlans={weekPlans}
+          familyId={familyId}
+          onImportComplete={handleImportComplete}
+          onCancel={() => setShowImport(false)}
+        />
+      )}
+
+      <div className="import-section">
+        <button
+          className="btn btn-secondary import-btn"
+          onClick={() => setShowImport(true)}
+        >
+          Import Meal History (CSV)
+        </button>
+        <span className="import-hint">
+          Upload a CSV with fuzzy recipe matching
+        </span>
+      </div>
+
       <div className="analytics-filter">
         <label>Time range:</label>
         <select
