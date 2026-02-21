@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import type { Recipe, RecipeCategory, DayMeal } from '../types';
 import {
   getCommunityRecipes,
