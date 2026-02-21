@@ -25,7 +25,7 @@ interface MealMapping {
   matchedRecipeId: string | null;
   matchedRecipeName: string | null;
   fuzzySuggestions: { id: string; name: string; score: number }[];
-  userChoice: 'recipe' | 'custom';
+  userChoice: 'recipe' | 'custom' | 'exclude';
   userSelectedRecipeId: string | null;
 }
 
@@ -275,19 +275,21 @@ export function CSVImportPreview({
     e.target.value = '';
   };
 
-  const updateMapping = (csvName: string, recipeId: string | null) => {
+  const updateMapping = (csvName: string, choice: string) => {
     setMappings((prev) => {
       const next = new Map(prev);
       const current = next.get(csvName);
       if (current) {
-        if (recipeId === null) {
+        if (choice === '__exclude__') {
+          next.set(csvName, { ...current, userChoice: 'exclude', userSelectedRecipeId: null });
+        } else if (choice === '__custom__') {
           next.set(csvName, { ...current, userChoice: 'custom', userSelectedRecipeId: null });
         } else {
-          const recipe = recipes.find((r) => r.id === recipeId);
+          const recipe = recipes.find((r) => r.id === choice);
           next.set(csvName, {
             ...current,
             userChoice: 'recipe',
-            userSelectedRecipeId: recipeId,
+            userSelectedRecipeId: choice,
             matchedRecipeName: recipe?.name || null,
           });
         }
@@ -300,12 +302,14 @@ export function CSVImportPreview({
     let exact = 0;
     let fuzzy = 0;
     let custom = 0;
+    let excluded = 0;
     mappings.forEach((m) => {
-      if (m.status === 'exact') exact++;
+      if (m.userChoice === 'exclude') excluded++;
+      else if (m.status === 'exact') exact++;
       else if (m.userChoice === 'recipe' && m.userSelectedRecipeId) fuzzy++;
       else custom++;
     });
-    return { exact, fuzzy, custom, total: mappings.size };
+    return { exact, fuzzy, custom, excluded, total: mappings.size };
   }, [mappings]);
 
   const handleImport = async () => {
@@ -324,6 +328,10 @@ export function CSVImportPreview({
 
       for (const row of parsedRows) {
         const mapping = mappings.get(row.mealName);
+
+        // Skip excluded meals
+        if (mapping && mapping.userChoice === 'exclude') continue;
+
         let mealValue: string;
 
         if (mapping && mapping.userChoice === 'recipe' && mapping.userSelectedRecipeId) {
@@ -517,6 +525,7 @@ export function CSVImportPreview({
           <span className="match-stat match-exact">{stats.exact} exact</span>
           <span className="match-stat match-fuzzy">{stats.fuzzy} fuzzy</span>
           <span className="match-stat match-unmatched">{stats.custom} unmatched</span>
+          {stats.excluded > 0 && <span className="match-stat match-excluded">{stats.excluded} excluded</span>}
           <span className="match-stat match-total">{parsedRows.length} meals across {new Set(parsedRows.map(r => r.weekStart)).size} weeks</span>
         </div>
 
@@ -524,40 +533,53 @@ export function CSVImportPreview({
           {sortedMappings.map((mapping) => (
             <div
               key={mapping.csvName}
-              className={`mapping-row mapping-${mapping.status}`}
+              className={`mapping-row mapping-${mapping.userChoice === 'exclude' ? 'excluded' : mapping.status}`}
             >
               <div className="mapping-csv-name">
-                <span className={`match-indicator match-indicator-${mapping.status}`}>
-                  {mapping.status === 'exact' ? '~' : mapping.status === 'fuzzy' ? '?' : '!'}
+                <span className={`match-indicator match-indicator-${mapping.userChoice === 'exclude' ? 'excluded' : mapping.status}`}>
+                  {mapping.userChoice === 'exclude' ? 'x' : mapping.status === 'exact' ? '~' : mapping.status === 'fuzzy' ? '?' : '!'}
                 </span>
-                <span className="mapping-name">{mapping.csvName}</span>
+                <span className={`mapping-name${mapping.userChoice === 'exclude' ? ' mapping-name-excluded' : ''}`}>{mapping.csvName}</span>
                 <span className="mapping-count">
                   ({parsedRows.filter((r) => r.mealName === mapping.csvName).length}x)
                 </span>
               </div>
 
               <div className="mapping-action">
-                {mapping.status === 'exact' ? (
-                  <span className="mapping-matched-to">
-                    Matched to <strong>{mapping.matchedRecipeName}</strong>
-                  </span>
+                {mapping.status === 'exact' && mapping.userChoice !== 'exclude' ? (
+                  <div className="mapping-exact-row">
+                    <span className="mapping-matched-to">
+                      Matched to <strong>{mapping.matchedRecipeName}</strong>
+                    </span>
+                    <button
+                      className="btn-exclude-small"
+                      onClick={() => updateMapping(mapping.csvName, mapping.userChoice === 'exclude' ? mapping.matchedRecipeId || '__custom__' : '__exclude__')}
+                      title="Exclude from import"
+                    >
+                      Exclude
+                    </button>
+                  </div>
+                ) : mapping.status === 'exact' && mapping.userChoice === 'exclude' ? (
+                  <button
+                    className="btn-include-small"
+                    onClick={() => updateMapping(mapping.csvName, mapping.matchedRecipeId || '__custom__')}
+                  >
+                    Include
+                  </button>
                 ) : (
                   <div className="mapping-select-group">
                     <select
                       value={
-                        mapping.userChoice === 'custom'
-                          ? '__custom__'
-                          : mapping.userSelectedRecipeId || '__custom__'
+                        mapping.userChoice === 'exclude'
+                          ? '__exclude__'
+                          : mapping.userChoice === 'custom'
+                            ? '__custom__'
+                            : mapping.userSelectedRecipeId || '__custom__'
                       }
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        updateMapping(
-                          mapping.csvName,
-                          val === '__custom__' ? null : val
-                        );
-                      }}
+                      onChange={(e) => updateMapping(mapping.csvName, e.target.value)}
                     >
                       <option value="__custom__">Keep as custom meal</option>
+                      <option value="__exclude__">Exclude from import</option>
                       {mapping.fuzzySuggestions.length > 0 && (
                         <optgroup label="Suggestions">
                           {mapping.fuzzySuggestions.map((s) => (
@@ -600,7 +622,7 @@ export function CSVImportPreview({
             onClick={handleImport}
             disabled={importing}
           >
-            {importing ? 'Importing...' : `Import ${parsedRows.length} Meals`}
+            {importing ? 'Importing...' : `Import ${parsedRows.length - parsedRows.filter(r => mappings.get(r.mealName)?.userChoice === 'exclude').length} Meals`}
           </button>
         </div>
       </div>

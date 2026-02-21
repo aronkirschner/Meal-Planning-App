@@ -1725,6 +1725,11 @@
   color: #721c24;
 }
 
+.match-excluded {
+  background: #e2e3e5;
+  color: #383d41;
+}
+
 .match-total {
   background: var(--bg-secondary);
   color: var(--text-secondary);
@@ -1762,6 +1767,11 @@
   background: rgba(248, 215, 218, 0.15);
 }
 
+.mapping-excluded {
+  background: rgba(226, 227, 229, 0.15);
+  opacity: 0.6;
+}
+
 .mapping-csv-name {
   display: flex;
   align-items: center;
@@ -1797,9 +1807,49 @@
   color: #721c24;
 }
 
+.match-indicator-excluded {
+  background: #e2e3e5;
+  color: #383d41;
+}
+
 .mapping-name {
   font-weight: 500;
   color: var(--text-primary);
+}
+
+.mapping-name-excluded {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+.mapping-exact-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.btn-exclude-small,
+.btn-include-small {
+  background: none;
+  border: 1px solid var(--border-color);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.btn-exclude-small:hover {
+  background: #f8d7da;
+  border-color: #f5c6cb;
+  color: #721c24;
+}
+
+.btn-include-small:hover {
+  background: #d4edda;
+  border-color: #c3e6cb;
+  color: #155724;
 }
 
 .mapping-count {
