@@ -31,8 +31,7 @@ function getWeeksAgoDate(weeks: number): string {
 }
 
 function countRecipesInPlans(
-  plans: WeekPlan[],
-  recipes: Recipe[]
+  plans: WeekPlan[]
 ): Map<string, { count: number; lastPlanned: string }> {
   const counts = new Map<string, { count: number; lastPlanned: string }>();
 
@@ -100,8 +99,8 @@ export function CookingAnalytics({ recipes, familyId }: CookingAnalyticsProps) {
   }, [weekPlans, timeFilter]);
 
   const recipeCounts = useMemo(
-    () => countRecipesInPlans(filteredPlans, recipes),
-    [filteredPlans, recipes]
+    () => countRecipesInPlans(filteredPlans),
+    [filteredPlans]
   );
 
   const rankedRecipes = useMemo((): RecipeCount[] => {
