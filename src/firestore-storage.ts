@@ -271,3 +271,22 @@ export function subscribeToWeekPlans(
 
   return unsubscribe;
 }
+
+// Get all week plans from other families (for community popular meals)
+export async function getCommunityWeekPlans(): Promise<{ plan: WeekPlan; familyId: string }[]> {
+  const plansRef = collectionGroup(db, 'weekPlans');
+  const snapshot = await getDocs(plansRef);
+
+  const results: { plan: WeekPlan; familyId: string }[] = [];
+  snapshot.docs.forEach((docSnap) => {
+    const familyId = docSnap.ref.parent.parent?.id;
+    if (familyId) {
+      results.push({
+        plan: docSnap.data() as WeekPlan,
+        familyId,
+      });
+    }
+  });
+
+  return results;
+}

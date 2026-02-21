@@ -20,9 +20,10 @@ import { RecipeList } from './components/RecipeList';
 import { WeekPlanner } from './components/WeekPlanner';
 import { ShoppingList } from './components/ShoppingList';
 import { CommunityRecipes } from './components/CommunityRecipes';
+import { CookingAnalytics } from './components/CookingAnalytics';
 import './App.css';
 
-type Tab = 'recipes' | 'planner' | 'shopping' | 'community';
+type Tab = 'recipes' | 'planner' | 'shopping' | 'community' | 'analytics';
 
 function getSunday(date: Date): Date {
   const d = new Date(date);
@@ -251,10 +252,16 @@ function MealPlannerApp() {
           Shopping List
         </button>
         <button
+          className={`nav-btn ${activeTab === 'analytics' ? 'active' : ''}`}
+          onClick={() => setActiveTab('analytics')}
+        >
+          Analytics
+        </button>
+        <button
           className={`nav-btn ${activeTab === 'community' ? 'active' : ''}`}
           onClick={() => setActiveTab('community')}
         >
-          Community Recipes
+          Community
         </button>
       </nav>
 
@@ -316,6 +323,16 @@ function MealPlannerApp() {
         {activeTab === 'shopping' && (
           <div className="shopping-tab">
             <ShoppingList recipes={recipes} weekPlan={currentWeekPlan} />
+          </div>
+        )}
+
+        {activeTab === 'analytics' && (
+          <div className="analytics-tab">
+            <h2>Cooking Analytics</h2>
+            <CookingAnalytics
+              recipes={recipes}
+              familyId={family.id}
+            />
           </div>
         )}
 

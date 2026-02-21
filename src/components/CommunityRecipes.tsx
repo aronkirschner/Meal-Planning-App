@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
-import type { Recipe, RecipeCategory } from '../types';
+import { useState, useEffect, useMemo } from 'react';
+import type { Recipe, RecipeCategory, DayMeal } from '../types';
 import {
   getCommunityRecipes,
+  getCommunityWeekPlans,
   getFamily,
   addRecipe,
   generateId,
@@ -14,6 +15,12 @@ interface CommunityRecipesProps {
 
 interface CommunityRecipe {
   recipe: Recipe;
+  familyName: string;
+}
+
+interface PopularRecipe {
+  recipe: Recipe;
+  count: number;
   familyName: string;
 }
 
@@ -38,6 +45,7 @@ export function CommunityRecipes({
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
   const [addingId, setAddingId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [popularRecipes, setPopularRecipes] = useState<PopularRecipe[]>([]);
 
   useEffect(() => {
     loadCommunityRecipes();
@@ -65,6 +73,49 @@ export function CommunityRecipes({
       }));
 
       setRecipes(communityRecipes);
+
+      // Build popular meals from community week plans
+      try {
+        const communityPlans = await getCommunityWeekPlans();
+        const otherFamilyPlans = communityPlans.filter(
+          (p) => p.familyId !== familyId
+        );
+
+        // Count recipe usage across all community week plans
+        const recipeCountMap = new Map<string, number>();
+        for (const { plan } of otherFamilyPlans) {
+          for (const dayMeals of Object.values(plan.days)) {
+            const meal = dayMeals as DayMeal;
+            for (const key of ['main', 'vegetable', 'grain', 'other'] as const) {
+              const value = meal[key];
+              if (value && !value.startsWith('custom:')) {
+                recipeCountMap.set(value, (recipeCountMap.get(value) || 0) + 1);
+              }
+            }
+          }
+        }
+
+        // Map recipe IDs to recipe objects with counts
+        const recipeById = new Map(
+          communityRecipes.map((cr) => [cr.recipe.id, cr])
+        );
+        const popular: PopularRecipe[] = [];
+        recipeCountMap.forEach((count, recipeId) => {
+          const cr = recipeById.get(recipeId);
+          if (cr) {
+            popular.push({
+              recipe: cr.recipe,
+              count,
+              familyName: cr.familyName,
+            });
+          }
+        });
+
+        popular.sort((a, b) => b.count - a.count);
+        setPopularRecipes(popular.slice(0, 10));
+      } catch (err) {
+        console.error('Error loading community popular meals:', err);
+      }
     } catch (err) {
       console.error('Error loading community recipes:', err);
       setError('Failed to load community recipes');
@@ -133,6 +184,41 @@ export function CommunityRecipes({
         Browse recipes from other families and add ones you like to your
         collection.
       </p>
+
+      {popularRecipes.length > 0 && (
+        <div className="popular-meals-section">
+          <h3>Most Cooked by Other Families</h3>
+          <div className="popular-meals-list">
+            {popularRecipes.map((pr, index) => (
+              <div key={pr.recipe.id} className="popular-meal-item">
+                <span className="popular-rank">#{index + 1}</span>
+                <div className="popular-meal-info">
+                  <span className="popular-meal-name">{pr.recipe.name}</span>
+                  <span className="popular-meal-meta">
+                    {pr.count} {pr.count === 1 ? 'time' : 'times'} &middot;{' '}
+                    {pr.familyName}
+                  </span>
+                </div>
+                {addedIds.has(pr.recipe.id) ? (
+                  <button className="btn-added btn-sm" disabled>
+                    Added!
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleAddRecipe(pr.recipe)}
+                    className="btn-primary btn-sm"
+                    disabled={addingId === pr.recipe.id}
+                  >
+                    {addingId === pr.recipe.id ? 'Adding...' : '+ Add'}
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <h3>All Community Recipes</h3>
 
       <div className="recipe-filters">
         <input
