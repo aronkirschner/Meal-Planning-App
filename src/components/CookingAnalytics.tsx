@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
-import type { Recipe, WeekPlan, RecipeCategory, DayMeal } from '../types';
+import type { Recipe, WeekPlan, RecipeCategory, DayMeal, DayOfWeek } from '../types';
 import { getWeekPlans } from '../firestore-storage';
 import { CSVImportPreview } from './CSVImportPreview';
+import { DAYS_OF_WEEK } from '../types';
 
 interface CookingAnalyticsProps {
   recipes: Recipe[];
@@ -85,6 +86,58 @@ export function CookingAnalytics({ recipes, familyId }: CookingAnalyticsProps) {
   const handleImportComplete = async () => {
     setShowImport(false);
     await loadPlans();
+  };
+
+  const handleExportCSV = () => {
+    const recipeMap = new Map(recipes.map((r) => [r.id, r]));
+    const DAY_LABELS: Record<DayOfWeek, string> = {
+      sunday: 'Sunday',
+      monday: 'Monday',
+      tuesday: 'Tuesday',
+      wednesday: 'Wednesday',
+      thursday: 'Thursday',
+      friday: 'Friday',
+      saturday: 'Saturday',
+    };
+    const SLOTS = ['main', 'vegetable', 'grain', 'other'] as const;
+
+    const rows: string[] = ['week_start,day,meal,category'];
+
+    const sortedPlans = [...weekPlans].sort((a, b) => a.weekStart.localeCompare(b.weekStart));
+
+    for (const plan of sortedPlans) {
+      for (const day of DAYS_OF_WEEK) {
+        const dayMeal = plan.days[day] as DayMeal;
+        for (const slot of SLOTS) {
+          const value = dayMeal[slot];
+          if (!value) continue;
+
+          let mealName: string;
+          if (value.startsWith(CUSTOM_PREFIX)) {
+            mealName = value.slice(CUSTOM_PREFIX.length);
+          } else {
+            const recipe = recipeMap.get(value);
+            mealName = recipe ? recipe.name : value;
+          }
+
+          // Escape commas and quotes in meal name
+          const escapedName = mealName.includes(',') || mealName.includes('"')
+            ? `"${mealName.replace(/"/g, '""')}"`
+            : mealName;
+
+          rows.push(`${plan.weekStart},${DAY_LABELS[day]},${escapedName},${slot}`);
+        }
+      }
+    }
+
+    const csvContent = rows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `meal-history-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   const filteredPlans = useMemo(() => {
@@ -177,8 +230,15 @@ const recipeCounts = useMemo(
         >
           Import Meal History (CSV)
         </button>
+        <button
+          className="btn btn-secondary import-btn"
+          onClick={handleExportCSV}
+          disabled={weekPlans.length === 0}
+        >
+          Export Meal History (CSV)
+        </button>
         <span className="import-hint">
-          Upload a CSV with fuzzy recipe matching
+          Import or export meal plans as CSV
         </span>
       </div>
 
