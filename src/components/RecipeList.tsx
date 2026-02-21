@@ -8,6 +8,31 @@ interface RecipeListProps {
   onDelete: (id: string) => void;
 }
 
+function StarRating({ rating, onRate }: { rating: number | undefined; onRate: (rating: number) => void }) {
+  const [hovered, setHovered] = useState<number | null>(null);
+  const display = hovered ?? (rating || 0);
+
+  return (
+    <div className="star-rating" onMouseLeave={() => setHovered(null)}>
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          key={star}
+          className={`star-btn ${star <= display ? 'star-filled' : 'star-empty'}`}
+          onMouseEnter={() => setHovered(star)}
+          onClick={(e) => {
+            e.stopPropagation();
+            // Click same rating to clear it
+            onRate(rating === star ? 0 : star);
+          }}
+          title={rating === star ? 'Clear rating' : `Rate ${star} star${star > 1 ? 's' : ''}`}
+        >
+          {star <= display ? '\u2605' : '\u2606'}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 const CATEGORY_LABELS: Record<RecipeCategory, string> = {
   main: 'Main Dishes',
   vegetable: 'Vegetables',
@@ -98,6 +123,10 @@ export function RecipeList({ recipes, onUpdate, onDelete }: RecipeListProps) {
                   ) : (
                     <div key={recipe.id} className={`recipe-card ${expandedId === recipe.id ? 'expanded' : ''}`}>
                       <h4>{recipe.name}</h4>
+                      <StarRating
+                        rating={recipe.rating}
+                        onRate={(r) => onUpdate({ ...recipe, rating: r || undefined })}
+                      />
                       <a
                         href={recipe.url}
                         target="_blank"

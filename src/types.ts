@@ -14,6 +14,7 @@ export interface Recipe {
   ingredients: Ingredient[];
   directions: string[];
   notes?: string;
+  rating?: number; // 1-5 stars, undefined = unrated
   createdAt: string;
 }
 
