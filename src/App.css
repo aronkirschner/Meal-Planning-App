@@ -890,6 +890,14 @@
   color: var(--border-color);
 }
 
+.star-rating-readonly {
+  margin-bottom: 0.25rem;
+}
+
+.star-display {
+  font-size: 1rem;
+}
+
 .recipe-link {
   display: inline-block;
   margin-bottom: 0.75rem;

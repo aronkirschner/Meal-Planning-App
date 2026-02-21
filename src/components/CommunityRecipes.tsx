@@ -31,6 +31,22 @@ const CATEGORY_LABELS: Record<RecipeCategory, string> = {
   other: 'Other',
 };
 
+function StarDisplay({ rating }: { rating: number | undefined }) {
+  if (!rating) return null;
+  return (
+    <div className="star-rating star-rating-readonly">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <span
+          key={star}
+          className={`star-display ${star <= rating ? 'star-filled' : 'star-empty'}`}
+        >
+          {star <= rating ? '\u2605' : '\u2606'}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export function CommunityRecipes({
   familyId,
   onRecipeAdded,
@@ -261,6 +277,7 @@ export function CommunityRecipes({
                       className={`recipe-card ${expandedId === cr.recipe.id ? 'expanded' : ''}`}
                     >
                       <h4>{cr.recipe.name}</h4>
+                      <StarDisplay rating={cr.recipe.rating} />
                       <span className="community-family-badge">
                         From: {cr.familyName}
                       </span>
