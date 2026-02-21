@@ -287,6 +287,16 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan }: WeekP
       </div>
 
       <div className="planner-actions">
+        <button
+          onClick={() => {
+            if (window.confirm('Clear all meals for this week?')) {
+              setDays({ ...emptyDays });
+            }
+          }}
+          className="btn-secondary"
+        >
+          Clear Week
+        </button>
         <button onClick={handleSave} className="btn-primary">
           Save Week Plan
         </button>
