@@ -34,6 +34,8 @@ function cleanForFirestore(obj: any): any {
   Object.keys(cleaned).forEach((key) => {
     if (cleaned[key] === undefined) {
       delete cleaned[key];
+    } else if (typeof cleaned[key] === 'object' && cleaned[key] !== null && !Array.isArray(cleaned[key])) {
+      cleaned[key] = cleanForFirestore(cleaned[key]);
     }
   });
   return cleaned;
@@ -243,7 +245,7 @@ export async function getWeekPlan(familyId: string, weekStart: string): Promise<
 export async function saveWeekPlan(familyId: string, plan: WeekPlan): Promise<void> {
   try {
     const planRef = doc(getWeekPlansCollection(familyId), plan.id);
-    await setDoc(planRef, plan);
+    await setDoc(planRef, cleanForFirestore(plan));
     console.log('Week plan saved successfully');
   } catch (error) {
     console.error('Error saving week plan:', error);

@@ -259,7 +259,7 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan }: WeekP
       ...prev,
       [day]: {
         ...prev[day],
-        [mealType]: value || undefined,
+        [mealType]: value,
       },
     }));
   };
