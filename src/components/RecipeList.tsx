@@ -10,7 +10,7 @@ interface RecipeListProps {
   onUpdate: (recipe: Recipe) => void;
   onDelete: (id: string) => void;
   cookCounts?: Map<string, number>;
-  onAddToWeek?: (recipeId: string, day: DayOfWeek, mealType: keyof DayMeal) => void;
+  onAddToWeek?: (recipeId: string, day: DayOfWeek, mealType: keyof DayMeal, weekStart: string) => void;
 }
 
 function StarRating({ rating, onRate }: { rating: number | undefined; onRate: (rating: number) => void }) {
@@ -69,28 +69,41 @@ function getSunday(date: Date): Date {
   return d;
 }
 
+function formatDateISO(date: Date): string {
+  return date.toISOString().split('T')[0];
+}
+
 function AddToWeekPicker({ recipe, onAdd, onClose }: {
   recipe: Recipe;
-  onAdd: (day: DayOfWeek, mealType: keyof DayMeal) => void;
+  onAdd: (day: DayOfWeek, mealType: keyof DayMeal, weekStart: string) => void;
   onClose: () => void;
 }) {
+  const [weekOffset, setWeekOffset] = useState(0); // 0 = this week, 1 = next week
   const [day, setDay] = useState<DayOfWeek>(DAYS_OF_WEEK[0]);
   const [slot, setSlot] = useState<keyof DayMeal>(recipe.category);
   const ref = useRef<HTMLDivElement>(null);
 
-  const sunday = getSunday(new Date());
+  const thisSunday = getSunday(new Date());
+  const selectedSunday = useMemo(() => {
+    const d = new Date(thisSunday);
+    d.setDate(d.getDate() + weekOffset * 7);
+    return d;
+  }, [thisSunday.getTime(), weekOffset]);
+
+  const weekStart = formatDateISO(selectedSunday);
+
   const dayDates = useMemo(() => {
     return DAYS_OF_WEEK.map((d, i) => {
-      const date = new Date(sunday);
+      const date = new Date(selectedSunday);
       date.setDate(date.getDate() + i);
       const label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       return { key: d, label: `${DAY_LABELS[d]} ${label}` };
     });
-  }, [sunday.getTime()]);
+  }, [selectedSunday.getTime()]);
 
-  const weekEnd = new Date(sunday);
+  const weekEnd = new Date(selectedSunday);
   weekEnd.setDate(weekEnd.getDate() + 6);
-  const weekLabel = `Week of ${sunday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+  const weekLabel = `${selectedSunday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -104,7 +117,23 @@ function AddToWeekPicker({ recipe, onAdd, onClose }: {
 
   return (
     <div className="add-to-week-picker" ref={ref}>
-      <div className="add-to-week-label">{weekLabel}</div>
+      <div className="add-to-week-header">
+        <div className="add-to-week-tabs">
+          <button
+            className={`add-to-week-tab ${weekOffset === 0 ? 'active' : ''}`}
+            onClick={() => setWeekOffset(0)}
+          >
+            This Week
+          </button>
+          <button
+            className={`add-to-week-tab ${weekOffset === 1 ? 'active' : ''}`}
+            onClick={() => setWeekOffset(1)}
+          >
+            Next Week
+          </button>
+        </div>
+        <span className="add-to-week-dates">{weekLabel}</span>
+      </div>
       <div className="add-to-week-row">
         <select value={day} onChange={(e) => setDay(e.target.value as DayOfWeek)}>
           {dayDates.map((d) => (
@@ -119,7 +148,7 @@ function AddToWeekPicker({ recipe, onAdd, onClose }: {
         <button
           className="btn-primary btn-sm"
           onClick={() => {
-            onAdd(day, slot);
+            onAdd(day, slot, weekStart);
             onClose();
           }}
         >
@@ -323,7 +352,7 @@ export function RecipeList({ recipes, onUpdate, onDelete, cookCounts, onAddToWee
                       {addToWeekId === recipe.id && onAddToWeek && (
                         <AddToWeekPicker
                           recipe={recipe}
-                          onAdd={(day, mealType) => onAddToWeek(recipe.id, day, mealType)}
+                          onAdd={(day, mealType, weekStart) => onAddToWeek(recipe.id, day, mealType, weekStart)}
                           onClose={() => setAddToWeekId(null)}
                         />
                       )}

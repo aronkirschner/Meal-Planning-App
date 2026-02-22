@@ -887,11 +887,47 @@
   margin-bottom: 0.5rem;
 }
 
-.add-to-week-label {
+.add-to-week-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.add-to-week-tabs {
+  display: flex;
+  gap: 0;
+}
+
+.add-to-week-tab {
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.add-to-week-tab:first-child {
+  border-radius: 4px 0 0 4px;
+}
+
+.add-to-week-tab:last-child {
+  border-radius: 0 4px 4px 0;
+  border-left: none;
+}
+
+.add-to-week-tab.active {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.add-to-week-dates {
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--text-secondary);
-  margin-bottom: 0.35rem;
 }
 
 .add-to-week-row {

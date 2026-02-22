@@ -165,9 +165,8 @@ function MealPlannerApp() {
     return await getWeekPlan(family.id, weekStart);
   };
 
-  const handleAddRecipeToWeek = async (recipeId: string, day: DayOfWeek, mealType: keyof DayMeal) => {
+  const handleAddRecipeToWeek = async (recipeId: string, day: DayOfWeek, mealType: keyof DayMeal, weekStart: string) => {
     if (!family) return;
-    const weekStart = formatDate(getSunday(new Date()));
     const existingPlan = currentWeekPlan?.weekStart === weekStart
       ? currentWeekPlan
       : await getWeekPlan(family.id, weekStart);
