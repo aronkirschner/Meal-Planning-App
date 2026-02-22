@@ -239,7 +239,24 @@ export async function getWeekPlans(familyId: string): Promise<WeekPlan[]> {
 
 export async function getWeekPlan(familyId: string, weekStart: string): Promise<WeekPlan | undefined> {
   const plans = await getWeekPlans(familyId);
-  return plans.find((p) => p.weekStart === weekStart);
+  const matches = plans.filter((p) => p.weekStart === weekStart);
+  if (matches.length === 0) return undefined;
+  if (matches.length === 1) return matches[0];
+  // Multiple documents for same week — return the one with the most meals
+  return matches.reduce((best, plan) => {
+    const count = (p: WeekPlan) => {
+      let n = 0;
+      for (const day of Object.values(p.days)) {
+        const m = day as Record<string, string | undefined>;
+        if (m.main) n++;
+        if (m.vegetable) n++;
+        if (m.grain) n++;
+        if (m.other) n++;
+      }
+      return n;
+    };
+    return count(plan) > count(best) ? plan : best;
+  });
 }
 
 export async function saveWeekPlan(familyId: string, plan: WeekPlan): Promise<void> {

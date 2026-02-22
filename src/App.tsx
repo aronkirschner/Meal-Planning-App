@@ -79,7 +79,8 @@ function MealPlannerApp() {
       const fetchedPlans = await getWeekPlans(family.id);
       setAllWeekPlans(fetchedPlans);
       const weekStart = formatDate(getSunday(new Date()));
-      const plan = fetchedPlans.find((p) => p.weekStart === weekStart);
+      // Use getWeekPlan which deduplicates if multiple docs exist for the same week
+      const plan = await getWeekPlan(family.id, weekStart);
       if (plan) {
         setCurrentWeekPlan(plan);
       }
