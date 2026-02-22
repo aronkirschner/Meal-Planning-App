@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import type { Recipe, WeekPlan, RecipeCategory, DayMeal, DayOfWeek } from '../types';
 import { getWeekPlans } from '../firestore-storage';
 import { CSVImportPreview } from './CSVImportPreview';
@@ -24,7 +24,23 @@ interface RecipeCount {
   recipe: Recipe;
   count: number;
   lastPlanned: string | null;
+  dates: { weekStart: string; day: DayOfWeek; slot: string }[];
 }
+
+const DAY_LABELS: Record<DayOfWeek, string> = {
+  sunday: 'Sunday',
+  monday: 'Monday',
+  tuesday: 'Tuesday',
+  wednesday: 'Wednesday',
+  thursday: 'Thursday',
+  friday: 'Friday',
+  saturday: 'Saturday',
+};
+
+const DAY_OFFSETS: Record<DayOfWeek, number> = {
+  sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
+  thursday: 4, friday: 5, saturday: 6,
+};
 
 function getWeeksAgoDate(weeks: number): string {
   const d = new Date();
@@ -37,24 +53,25 @@ function getWeeksAgoDate(weeks: number): string {
 
 function countRecipesInPlans(
   plans: WeekPlan[]
-): Map<string, { count: number; lastPlanned: string }> {
-  const counts = new Map<string, { count: number; lastPlanned: string }>();
+): Map<string, { count: number; lastPlanned: string; dates: { weekStart: string; day: DayOfWeek; slot: string }[] }> {
+  const counts = new Map<string, { count: number; lastPlanned: string; dates: { weekStart: string; day: DayOfWeek; slot: string }[] }>();
 
   for (const plan of plans) {
-    const days = plan.days;
-    for (const dayMeals of Object.values(days)) {
-      const meal = dayMeals as DayMeal;
-      for (const key of ['main', 'vegetable', 'grain', 'other'] as const) {
-        const value = meal[key];
+    for (const dayKey of DAYS_OF_WEEK) {
+      const meal = plan.days[dayKey] as DayMeal;
+      for (const slot of ['main', 'vegetable', 'grain', 'other'] as const) {
+        const value = meal[slot];
         if (value && !value.startsWith(CUSTOM_PREFIX)) {
           const existing = counts.get(value);
+          const entry = { weekStart: plan.weekStart, day: dayKey, slot };
           if (existing) {
             existing.count++;
+            existing.dates.push(entry);
             if (plan.weekStart > existing.lastPlanned) {
               existing.lastPlanned = plan.weekStart;
             }
           } else {
-            counts.set(value, { count: 1, lastPlanned: plan.weekStart });
+            counts.set(value, { count: 1, lastPlanned: plan.weekStart, dates: [entry] });
           }
         }
       }
@@ -69,6 +86,7 @@ export function CookingAnalytics({ recipes, familyId }: CookingAnalyticsProps) {
   const [loading, setLoading] = useState(true);
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
   const [showImport, setShowImport] = useState(false);
+  const [expandedRecipeId, setExpandedRecipeId] = useState<string | null>(null);
 
   const loadPlans = async () => {
     setLoading(true);
@@ -93,15 +111,6 @@ export function CookingAnalytics({ recipes, familyId }: CookingAnalyticsProps) {
 
   const handleExportCSV = () => {
     const recipeMap = new Map(recipes.map((r) => [r.id, r]));
-    const DAY_LABELS: Record<DayOfWeek, string> = {
-      sunday: 'Sunday',
-      monday: 'Monday',
-      tuesday: 'Tuesday',
-      wednesday: 'Wednesday',
-      thursday: 'Thursday',
-      friday: 'Friday',
-      saturday: 'Saturday',
-    };
     const SLOTS = ['main', 'vegetable', 'grain', 'other'] as const;
 
     const rows: string[] = ['week_start,day,meal,category'];
@@ -180,6 +189,7 @@ const recipeCounts = useMemo(
           recipe,
           count: data.count,
           lastPlanned: data.lastPlanned,
+          dates: data.dates.sort((a, b) => b.weekStart.localeCompare(a.weekStart)),
         });
       }
     });
@@ -294,39 +304,76 @@ const recipeCounts = useMemo(
                   </tr>
                 </thead>
                 <tbody>
-                  {rankedByCategory[category].map((item, index) => (
-                    <tr key={item.recipe.id}>
-                      <td className="rank-cell">{index + 1}</td>
-                      <td>{item.recipe.name}</td>
-                      <td className="count-cell">
-                        <span className="count-bar-container">
-                          <span
-                            className="count-bar"
-                            style={{
-                              width: `${Math.min(
-                                100,
-                                (item.count /
-                                  rankedByCategory[category][0].count) *
-                                  100
-                              )}%`,
-                            }}
-                          />
-                          <span className="count-number">{item.count}</span>
-                        </span>
-                      </td>
-                      <td className="date-cell">
-                        {item.lastPlanned
-                          ? new Date(
-                              item.lastPlanned + 'T00:00:00'
-                            ).toLocaleDateString('en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric',
-                            })
-                          : '-'}
-                      </td>
-                    </tr>
-                  ))}
+                  {rankedByCategory[category].map((item, index) => {
+                    const isExpanded = expandedRecipeId === item.recipe.id;
+                    return (
+                      <React.Fragment key={item.recipe.id}>
+                        <tr
+                          className="analytics-row-clickable"
+                          onClick={() => setExpandedRecipeId(isExpanded ? null : item.recipe.id)}
+                        >
+                          <td className="rank-cell">{index + 1}</td>
+                          <td>
+                            <span className="recipe-name-expand">
+                              {item.recipe.name}
+                              <span className="expand-arrow">{isExpanded ? '\u25B2' : '\u25BC'}</span>
+                            </span>
+                          </td>
+                          <td className="count-cell">
+                            <span className="count-bar-container">
+                              <span
+                                className="count-bar"
+                                style={{
+                                  width: `${Math.min(
+                                    100,
+                                    (item.count /
+                                      rankedByCategory[category][0].count) *
+                                      100
+                                  )}%`,
+                                }}
+                              />
+                              <span className="count-number">{item.count}</span>
+                            </span>
+                          </td>
+                          <td className="date-cell">
+                            {item.lastPlanned
+                              ? new Date(
+                                  item.lastPlanned + 'T00:00:00'
+                                ).toLocaleDateString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  year: 'numeric',
+                                })
+                              : '-'}
+                          </td>
+                        </tr>
+                        {isExpanded && (
+                          <tr className="analytics-detail-row">
+                            <td colSpan={4}>
+                              <div className="recipe-date-list">
+                                {item.dates.map((d, i) => {
+                                  const [y, mo, da] = d.weekStart.split('-').map(Number);
+                                  const baseDate = new Date(y, mo - 1, da);
+                                  baseDate.setDate(baseDate.getDate() + DAY_OFFSETS[d.day]);
+                                  const dateLabel = baseDate.toLocaleDateString('en-US', {
+                                    weekday: 'short',
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric',
+                                  });
+                                  return (
+                                    <span key={i} className="recipe-date-chip">
+                                      {dateLabel}
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

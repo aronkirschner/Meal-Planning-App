@@ -1800,6 +1800,45 @@
   white-space: nowrap;
 }
 
+.analytics-row-clickable {
+  cursor: pointer;
+}
+
+.analytics-row-clickable:hover {
+  background: var(--bg-primary);
+}
+
+.recipe-name-expand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.expand-arrow {
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+}
+
+.analytics-detail-row td {
+  padding: 0.5rem 1rem 0.75rem !important;
+  background: var(--bg-primary);
+}
+
+.recipe-date-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.recipe-date-chip {
+  font-size: 0.8rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  color: var(--text-secondary);
+}
+
 .never-cooked-list {
   display: flex;
   flex-wrap: wrap;
