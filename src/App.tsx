@@ -322,7 +322,7 @@ function MealPlannerApp() {
 
         {activeTab === 'shopping' && (
           <div className="shopping-tab">
-            <ShoppingList recipes={recipes} weekPlan={currentWeekPlan} />
+            <ShoppingList recipes={recipes} weekPlan={currentWeekPlan} onLoadWeekPlan={handleLoadWeekPlan} />
           </div>
         )}
 
