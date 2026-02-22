@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react';
-import type { Recipe, RecipeCategory } from '../types';
+import { useState, useMemo, useRef, useEffect } from 'react';
+import type { Recipe, RecipeCategory, DayOfWeek, DayMeal } from '../types';
+import { DAYS_OF_WEEK } from '../types';
 import { RecipeForm } from './RecipeForm';
 
 type SortOption = 'az' | 'rating' | 'cooked';
@@ -9,6 +10,7 @@ interface RecipeListProps {
   onUpdate: (recipe: Recipe) => void;
   onDelete: (id: string) => void;
   cookCounts?: Map<string, number>;
+  onAddToWeek?: (recipeId: string, day: DayOfWeek, mealType: keyof DayMeal) => void;
 }
 
 function StarRating({ rating, onRate }: { rating: number | undefined; onRate: (rating: number) => void }) {
@@ -43,9 +45,76 @@ const CATEGORY_LABELS: Record<RecipeCategory, string> = {
   other: 'Other',
 };
 
-export function RecipeList({ recipes, onUpdate, onDelete, cookCounts }: RecipeListProps) {
+const DAY_LABELS: Record<DayOfWeek, string> = {
+  sunday: 'Sunday',
+  monday: 'Monday',
+  tuesday: 'Tuesday',
+  wednesday: 'Wednesday',
+  thursday: 'Thursday',
+  friday: 'Friday',
+  saturday: 'Saturday',
+};
+
+const SLOT_LABELS: Record<keyof DayMeal, string> = {
+  main: 'Main',
+  vegetable: 'Vegetable',
+  grain: 'Grain',
+  other: 'Other',
+};
+
+function AddToWeekPicker({ recipe, onAdd, onClose }: {
+  recipe: Recipe;
+  onAdd: (day: DayOfWeek, mealType: keyof DayMeal) => void;
+  onClose: () => void;
+}) {
+  const [day, setDay] = useState<DayOfWeek>(DAYS_OF_WEEK[0]);
+  const [slot, setSlot] = useState<keyof DayMeal>(recipe.category);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        onClose();
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [onClose]);
+
+  return (
+    <div className="add-to-week-picker" ref={ref}>
+      <div className="add-to-week-row">
+        <select value={day} onChange={(e) => setDay(e.target.value as DayOfWeek)}>
+          {DAYS_OF_WEEK.map((d) => (
+            <option key={d} value={d}>{DAY_LABELS[d]}</option>
+          ))}
+        </select>
+        <select value={slot} onChange={(e) => setSlot(e.target.value as keyof DayMeal)}>
+          {(['main', 'vegetable', 'grain', 'other'] as const).map((s) => (
+            <option key={s} value={s}>{SLOT_LABELS[s]}</option>
+          ))}
+        </select>
+        <button
+          className="btn-primary btn-sm"
+          onClick={() => {
+            onAdd(day, slot);
+            onClose();
+          }}
+        >
+          Add
+        </button>
+        <button className="btn-secondary btn-sm" onClick={onClose}>
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export function RecipeList({ recipes, onUpdate, onDelete, cookCounts, onAddToWeek }: RecipeListProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [addToWeekId, setAddToWeekId] = useState<string | null>(null);
   const [filterCategory, setFilterCategory] = useState<RecipeCategory | 'all'>(
     'all'
   );
@@ -229,7 +298,23 @@ export function RecipeList({ recipes, onUpdate, onDelete, cookCounts }: RecipeLi
                         </>
                       )}
 
+                      {addToWeekId === recipe.id && onAddToWeek && (
+                        <AddToWeekPicker
+                          recipe={recipe}
+                          onAdd={(day, mealType) => onAddToWeek(recipe.id, day, mealType)}
+                          onClose={() => setAddToWeekId(null)}
+                        />
+                      )}
+
                       <div className="recipe-actions">
+                        {onAddToWeek && (
+                          <button
+                            onClick={() => setAddToWeekId(addToWeekId === recipe.id ? null : recipe.id)}
+                            className="btn-primary btn-sm"
+                          >
+                            + Add to Week
+                          </button>
+                        )}
                         <button
                           onClick={() => toggleExpanded(recipe.id)}
                           className="btn-secondary btn-sm"

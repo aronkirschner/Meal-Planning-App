@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import type { Recipe, WeekPlan, Family, DayMeal } from './types';
+import type { Recipe, WeekPlan, Family, DayMeal, DayOfWeek } from './types';
 import {
   addRecipe,
   updateRecipe,
@@ -9,6 +9,7 @@ import {
   getWeekPlans,
   getWeekPlan,
   getFamily,
+  generateId,
 } from './firestore-storage';
 import { AuthProvider, useAuth } from './AuthContext';
 import { Login } from './components/Login';
@@ -162,6 +163,35 @@ function MealPlannerApp() {
   const handleLoadWeekPlan = async (weekStart: string) => {
     if (!family) return undefined;
     return await getWeekPlan(family.id, weekStart);
+  };
+
+  const handleAddRecipeToWeek = async (recipeId: string, day: DayOfWeek, mealType: keyof DayMeal) => {
+    if (!family) return;
+    const weekStart = formatDate(getSunday(new Date()));
+    const existingPlan = currentWeekPlan?.weekStart === weekStart
+      ? currentWeekPlan
+      : await getWeekPlan(family.id, weekStart);
+
+    const emptyDays: WeekPlan['days'] = {
+      sunday: {}, monday: {}, tuesday: {}, wednesday: {},
+      thursday: {}, friday: {}, saturday: {},
+    };
+
+    const plan: WeekPlan = {
+      id: existingPlan?.id || generateId(),
+      weekStart,
+      days: existingPlan?.days || emptyDays,
+    };
+
+    plan.days[day] = { ...plan.days[day], [mealType]: recipeId };
+
+    try {
+      await saveWeekPlan(family.id, plan);
+      setCurrentWeekPlan(plan);
+    } catch (error) {
+      console.error('Failed to add recipe to week:', error);
+      alert('Failed to add recipe to week plan.');
+    }
   };
 
   const handleFamilySelected = (selectedFamily: Family) => {
@@ -324,6 +354,7 @@ function MealPlannerApp() {
               onUpdate={handleUpdateRecipe}
               onDelete={handleDeleteRecipe}
               cookCounts={recipeCookCounts}
+              onAddToWeek={handleAddRecipeToWeek}
             />
           </div>
         )}
