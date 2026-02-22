@@ -62,6 +62,13 @@ const SLOT_LABELS: Record<keyof DayMeal, string> = {
   other: 'Other',
 };
 
+function getSunday(date: Date): Date {
+  const d = new Date(date);
+  d.setDate(d.getDate() - d.getDay());
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
 function AddToWeekPicker({ recipe, onAdd, onClose }: {
   recipe: Recipe;
   onAdd: (day: DayOfWeek, mealType: keyof DayMeal) => void;
@@ -70,6 +77,20 @@ function AddToWeekPicker({ recipe, onAdd, onClose }: {
   const [day, setDay] = useState<DayOfWeek>(DAYS_OF_WEEK[0]);
   const [slot, setSlot] = useState<keyof DayMeal>(recipe.category);
   const ref = useRef<HTMLDivElement>(null);
+
+  const sunday = getSunday(new Date());
+  const dayDates = useMemo(() => {
+    return DAYS_OF_WEEK.map((d, i) => {
+      const date = new Date(sunday);
+      date.setDate(date.getDate() + i);
+      const label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      return { key: d, label: `${DAY_LABELS[d]} ${label}` };
+    });
+  }, [sunday.getTime()]);
+
+  const weekEnd = new Date(sunday);
+  weekEnd.setDate(weekEnd.getDate() + 6);
+  const weekLabel = `Week of ${sunday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -83,10 +104,11 @@ function AddToWeekPicker({ recipe, onAdd, onClose }: {
 
   return (
     <div className="add-to-week-picker" ref={ref}>
+      <div className="add-to-week-label">{weekLabel}</div>
       <div className="add-to-week-row">
         <select value={day} onChange={(e) => setDay(e.target.value as DayOfWeek)}>
-          {DAYS_OF_WEEK.map((d) => (
-            <option key={d} value={d}>{DAY_LABELS[d]}</option>
+          {dayDates.map((d) => (
+            <option key={d.key} value={d.key}>{d.label}</option>
           ))}
         </select>
         <select value={slot} onChange={(e) => setSlot(e.target.value as keyof DayMeal)}>

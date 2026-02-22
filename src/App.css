@@ -887,6 +887,13 @@
   margin-bottom: 0.5rem;
 }
 
+.add-to-week-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 0.35rem;
+}
+
 .add-to-week-row {
   display: flex;
   gap: 0.4rem;
