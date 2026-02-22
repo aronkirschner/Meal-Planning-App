@@ -224,11 +224,15 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan }: WeekP
   const [days, setDays] = useState<WeekPlan['days']>(
     weekPlan?.days || emptyDays
   );
+  const [currentPlanId, setCurrentPlanId] = useState<string | null>(
+    weekPlan?.id || null
+  );
 
   // Sync days when weekPlan prop loads asynchronously
   useEffect(() => {
     if (weekPlan?.days) {
       setDays(weekPlan.days);
+      setCurrentPlanId(weekPlan.id);
       setCurrentWeekStart(new Date(weekPlan.weekStart));
     }
   }, [weekPlan]);
@@ -266,10 +270,11 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan }: WeekP
 
   const handleSave = () => {
     const plan: WeekPlan = {
-      id: weekPlan?.id || generateId(),
+      id: currentPlanId || generateId(),
       weekStart: formatDate(currentWeekStart),
       days,
     };
+    setCurrentPlanId(plan.id);
     onSave(plan);
   };
 
@@ -278,8 +283,10 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan }: WeekP
     if (onLoadWeekPlan) {
       const plan = await onLoadWeekPlan(formatDate(newWeekStart));
       setDays(plan?.days || emptyDays);
+      setCurrentPlanId(plan?.id || null);
     } else {
       setDays(emptyDays);
+      setCurrentPlanId(null);
     }
   };
 
