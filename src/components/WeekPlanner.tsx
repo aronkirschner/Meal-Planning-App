@@ -20,7 +20,15 @@ function getSunday(date: Date): Date {
 }
 
 function formatDate(date: Date): string {
-  return date.toISOString().split('T')[0];
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function parseLocalDate(dateStr: string): Date {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d);
 }
 
 function addDays(date: Date, days: number): Date {
@@ -206,7 +214,7 @@ function MealSelector({ label, value, recipes, onChange }: MealSelectorProps) {
 export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan }: WeekPlannerProps) {
   const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => {
     if (weekPlan) {
-      return new Date(weekPlan.weekStart);
+      return parseLocalDate(weekPlan.weekStart);
     }
     return getSunday(new Date());
   });
@@ -233,7 +241,7 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan }: WeekP
     if (weekPlan?.days) {
       setDays(weekPlan.days);
       setCurrentPlanId(weekPlan.id);
-      setCurrentWeekStart(new Date(weekPlan.weekStart));
+      setCurrentWeekStart(parseLocalDate(weekPlan.weekStart));
     }
   }, [weekPlan]);
 

@@ -29,7 +29,10 @@ interface RecipeCount {
 function getWeeksAgoDate(weeks: number): string {
   const d = new Date();
   d.setDate(d.getDate() - weeks * 7);
-  return d.toISOString().split('T')[0];
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 function countRecipesInPlans(
@@ -135,7 +138,9 @@ export function CookingAnalytics({ recipes, familyId }: CookingAnalyticsProps) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `meal-history-${new Date().toISOString().split('T')[0]}.csv`;
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    link.download = `meal-history-${dateStr}.csv`;
     link.click();
     URL.revokeObjectURL(url);
   };
