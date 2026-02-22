@@ -1,11 +1,14 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import type { Recipe, RecipeCategory } from '../types';
 import { RecipeForm } from './RecipeForm';
+
+type SortOption = 'az' | 'rating' | 'cooked';
 
 interface RecipeListProps {
   recipes: Recipe[];
   onUpdate: (recipe: Recipe) => void;
   onDelete: (id: string) => void;
+  cookCounts?: Map<string, number>;
 }
 
 function StarRating({ rating, onRate }: { rating: number | undefined; onRate: (rating: number) => void }) {
@@ -40,13 +43,14 @@ const CATEGORY_LABELS: Record<RecipeCategory, string> = {
   other: 'Other',
 };
 
-export function RecipeList({ recipes, onUpdate, onDelete }: RecipeListProps) {
+export function RecipeList({ recipes, onUpdate, onDelete, cookCounts }: RecipeListProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [filterCategory, setFilterCategory] = useState<RecipeCategory | 'all'>(
     'all'
   );
   const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState<SortOption>('az');
 
   const filteredRecipes = recipes.filter((recipe) => {
     const matchesCategory =
@@ -57,7 +61,23 @@ export function RecipeList({ recipes, onUpdate, onDelete }: RecipeListProps) {
     return matchesCategory && matchesSearch;
   });
 
-  const groupedRecipes = filteredRecipes.reduce(
+  const sortedRecipes = useMemo(() => {
+    const sorted = [...filteredRecipes];
+    switch (sortBy) {
+      case 'az':
+        sorted.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case 'rating':
+        sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0) || a.name.localeCompare(b.name));
+        break;
+      case 'cooked':
+        sorted.sort((a, b) => (cookCounts?.get(b.id) || 0) - (cookCounts?.get(a.id) || 0) || a.name.localeCompare(b.name));
+        break;
+    }
+    return sorted;
+  }, [filteredRecipes, sortBy, cookCounts]);
+
+  const groupedRecipes = sortedRecipes.reduce(
     (acc, recipe) => {
       if (!acc[recipe.category]) {
         acc[recipe.category] = [];
@@ -99,6 +119,15 @@ export function RecipeList({ recipes, onUpdate, onDelete }: RecipeListProps) {
           <option value="grain">Grains</option>
           <option value="other">Other</option>
         </select>
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value as SortOption)}
+          className="sort-select"
+        >
+          <option value="az">Sort: A-Z</option>
+          <option value="rating">Sort: Rating</option>
+          <option value="cooked">Sort: Times Cooked</option>
+        </select>
       </div>
 
       {filteredRecipes.length === 0 ? (
@@ -123,10 +152,15 @@ export function RecipeList({ recipes, onUpdate, onDelete }: RecipeListProps) {
                   ) : (
                     <div key={recipe.id} className={`recipe-card ${expandedId === recipe.id ? 'expanded' : ''}`}>
                       <h4>{recipe.name}</h4>
-                      <StarRating
-                        rating={recipe.rating}
-                        onRate={(r) => onUpdate({ ...recipe, rating: r || undefined })}
-                      />
+                      <div className="recipe-meta">
+                        <StarRating
+                          rating={recipe.rating}
+                          onRate={(r) => onUpdate({ ...recipe, rating: r || undefined })}
+                        />
+                        <span className="cook-count" title="Times cooked">
+                          {cookCounts?.get(recipe.id) || 0}x cooked
+                        </span>
+                      </div>
                       <a
                         href={recipe.url}
                         target="_blank"

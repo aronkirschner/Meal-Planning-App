@@ -861,11 +861,27 @@
   font-size: 1.1rem;
 }
 
+/* Recipe meta row (stars + cook count) */
+.recipe-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.cook-count {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  padding: 0.15rem 0.5rem;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
 /* Star Rating */
 .star-rating {
   display: flex;
   gap: 0.1rem;
-  margin-bottom: 0.5rem;
 }
 
 .star-btn {

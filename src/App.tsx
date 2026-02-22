@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import type { Recipe, WeekPlan, Family } from './types';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import type { Recipe, WeekPlan, Family, DayMeal } from './types';
 import {
   addRecipe,
   updateRecipe,
@@ -42,6 +42,7 @@ function MealPlannerApp() {
   const [activeTab, setActiveTab] = useState<Tab>('planner');
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [currentWeekPlan, setCurrentWeekPlan] = useState<WeekPlan | null>(null);
+  const [allWeekPlans, setAllWeekPlans] = useState<WeekPlan[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [dataLoading, setDataLoading] = useState(true);
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -72,6 +73,7 @@ function MealPlannerApp() {
 
       // Fetch week plans
       const fetchedPlans = await getWeekPlans(family.id);
+      setAllWeekPlans(fetchedPlans);
       const weekStart = formatDate(getSunday(new Date()));
       const plan = fetchedPlans.find((p) => p.weekStart === weekStart);
       if (plan) {
@@ -88,6 +90,23 @@ function MealPlannerApp() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Compute recipe cook counts from all week plans
+  const recipeCookCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const plan of allWeekPlans) {
+      for (const dayMeals of Object.values(plan.days)) {
+        const meal = dayMeals as DayMeal;
+        for (const key of ['main', 'vegetable', 'grain', 'other'] as const) {
+          const value = meal[key];
+          if (value && !value.startsWith('custom:')) {
+            counts.set(value, (counts.get(value) || 0) + 1);
+          }
+        }
+      }
+    }
+    return counts;
+  }, [allWeekPlans]);
 
   const handleAddRecipe = async (recipe: Recipe) => {
     if (!family) return;
@@ -304,6 +323,7 @@ function MealPlannerApp() {
               recipes={recipes}
               onUpdate={handleUpdateRecipe}
               onDelete={handleDeleteRecipe}
+              cookCounts={recipeCookCounts}
             />
           </div>
         )}
