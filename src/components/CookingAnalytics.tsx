@@ -51,17 +51,55 @@ function getWeeksAgoDate(weeks: number): string {
   return `${y}-${m}-${day}`;
 }
 
+// Deduplicate week plans — keep only one per weekStart (prefer the one with the most meals filled in)
+function deduplicatePlans(plans: WeekPlan[]): WeekPlan[] {
+  const byWeek = new Map<string, WeekPlan>();
+  for (const plan of plans) {
+    const existing = byWeek.get(plan.weekStart);
+    if (!existing) {
+      byWeek.set(plan.weekStart, plan);
+    } else {
+      // Keep the plan with more meals filled in
+      const countMeals = (p: WeekPlan) => {
+        let n = 0;
+        for (const day of Object.values(p.days)) {
+          const m = day as DayMeal;
+          if (m.main) n++;
+          if (m.vegetable) n++;
+          if (m.grain) n++;
+          if (m.other) n++;
+        }
+        return n;
+      };
+      if (countMeals(plan) > countMeals(existing)) {
+        byWeek.set(plan.weekStart, plan);
+      }
+    }
+  }
+  return Array.from(byWeek.values());
+}
+
 function countRecipesInPlans(
   plans: WeekPlan[]
 ): Map<string, { count: number; lastPlanned: string; dates: { weekStart: string; day: DayOfWeek; slot: string }[] }> {
+  const dedupedPlans = deduplicatePlans(plans);
   const counts = new Map<string, { count: number; lastPlanned: string; dates: { weekStart: string; day: DayOfWeek; slot: string }[] }>();
 
-  for (const plan of plans) {
+  for (const plan of dedupedPlans) {
+    // Track which recipes we've already counted for each day in this plan
+    // so we don't double-count a recipe that appears in multiple slots on the same day
+    const dayCounted = new Map<string, Set<string>>(); // day -> Set of recipeIds already counted
+
     for (const dayKey of DAYS_OF_WEEK) {
       const meal = plan.days[dayKey] as DayMeal;
       for (const slot of ['main', 'vegetable', 'grain', 'other'] as const) {
         const value = meal[slot];
         if (value && !value.startsWith(CUSTOM_PREFIX)) {
+          const daySet = dayCounted.get(dayKey) || new Set();
+          if (daySet.has(value)) continue; // already counted this recipe for this day
+          daySet.add(value);
+          dayCounted.set(dayKey, daySet);
+
           const existing = counts.get(value);
           const entry = { weekStart: plan.weekStart, day: dayKey, slot };
           if (existing) {
@@ -115,7 +153,7 @@ export function CookingAnalytics({ recipes, familyId }: CookingAnalyticsProps) {
 
     const rows: string[] = ['week_start,day,meal,category'];
 
-    const sortedPlans = [...weekPlans].sort((a, b) => a.weekStart.localeCompare(b.weekStart));
+    const sortedPlans = [...dedupedPlans].sort((a, b) => a.weekStart.localeCompare(b.weekStart));
 
     for (const plan of sortedPlans) {
       for (const day of DAYS_OF_WEEK) {
@@ -154,8 +192,10 @@ export function CookingAnalytics({ recipes, familyId }: CookingAnalyticsProps) {
     URL.revokeObjectURL(url);
   };
 
+  const dedupedPlans = useMemo(() => deduplicatePlans(weekPlans), [weekPlans]);
+
   const filteredPlans = useMemo(() => {
-    if (timeFilter === 'all') return weekPlans;
+    if (timeFilter === 'all') return dedupedPlans;
 
     let cutoff: string;
     switch (timeFilter) {
@@ -170,8 +210,8 @@ export function CookingAnalytics({ recipes, familyId }: CookingAnalyticsProps) {
         break;
     }
 
-    return weekPlans.filter((p) => p.weekStart >= cutoff);
-  }, [weekPlans, timeFilter]);
+    return dedupedPlans.filter((p) => p.weekStart >= cutoff);
+  }, [dedupedPlans, timeFilter]);
 
 const recipeCounts = useMemo(
   () => countRecipesInPlans(filteredPlans),
