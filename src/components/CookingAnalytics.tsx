@@ -4,6 +4,16 @@ import { getWeekPlans } from '../firestore-storage';
 import { CSVImportPreview } from './CSVImportPreview';
 import { DAYS_OF_WEEK } from '../types';
 
+const CUISINE_COLORS: Record<string, string> = {
+  American: '#e8852a',
+  Italian: '#3d9a5e',
+  Mexican: '#c93535',
+  Asian: '#c77d20',
+  Mediterranean: '#2b7fc2',
+  Indian: '#9b5e1a',
+  Other: '#7a7a7a',
+};
+
 interface CookingAnalyticsProps {
   recipes: Recipe[];
   familyId: string;
@@ -262,6 +272,15 @@ const recipeCounts = useMemo(
     [recipeCounts]
   );
 
+  const cuisineBreakdown = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const item of rankedRecipes) {
+      const cuisine = item.recipe.cuisineType || 'Other';
+      counts.set(cuisine, (counts.get(cuisine) || 0) + item.count);
+    }
+    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
+  }, [rankedRecipes]);
+
   if (loading) {
     return <div className="loading">Loading cooking analytics...</div>;
   }
@@ -329,6 +348,35 @@ const recipeCounts = useMemo(
         </div>
       </div>
 
+      {cuisineBreakdown.length > 0 && (
+        <div className="analytics-category">
+          <h3>Cuisine Breakdown</h3>
+          <div className="cuisine-breakdown">
+            {cuisineBreakdown.map(([cuisine, count]) => (
+              <div key={cuisine} className="cuisine-bar-row">
+                <span className="cuisine-bar-label">
+                  <span
+                    className="cuisine-dot"
+                    style={{ background: CUISINE_COLORS[cuisine] || '#999' }}
+                  />
+                  {cuisine}
+                </span>
+                <span className="cuisine-bar-track">
+                  <span
+                    className="cuisine-bar-fill"
+                    style={{
+                      width: `${(count / cuisineBreakdown[0][1]) * 100}%`,
+                      background: CUISINE_COLORS[cuisine] || '#999',
+                    }}
+                  />
+                </span>
+                <span className="cuisine-bar-count">{count}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {(['main', 'vegetable', 'grain', 'other'] as RecipeCategory[]).map(
         (category) =>
           rankedByCategory[category].length > 0 ? (
@@ -356,6 +404,18 @@ const recipeCounts = useMemo(
                           <td>
                             <span className="recipe-name-expand">
                               {item.recipe.name}
+                              {item.recipe.cuisineType && (
+                                <span
+                                  className="cuisine-badge-inline"
+                                  style={{
+                                    background: (CUISINE_COLORS[item.recipe.cuisineType] || '#999') + '22',
+                                    color: CUISINE_COLORS[item.recipe.cuisineType] || '#999',
+                                    borderColor: (CUISINE_COLORS[item.recipe.cuisineType] || '#999') + '66',
+                                  }}
+                                >
+                                  {item.recipe.cuisineType}
+                                </span>
+                              )}
                               <span className="expand-arrow">{isExpanded ? '\u25B2' : '\u25BC'}</span>
                             </span>
                           </td>

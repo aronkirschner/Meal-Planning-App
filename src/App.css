@@ -1854,6 +1854,83 @@
   color: var(--text-secondary);
 }
 
+/* Cuisine breakdown */
+.cuisine-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.cuisine-bar-row {
+  display: grid;
+  grid-template-columns: 140px 1fr 40px;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.cuisine-bar-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.cuisine-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.cuisine-bar-track {
+  height: 1.1rem;
+  background: var(--bg-primary);
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+
+.cuisine-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+  opacity: 0.85;
+}
+
+.cuisine-bar-count {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  text-align: right;
+}
+
+/* Cuisine badge inline in analytics table */
+.cuisine-badge-inline {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15rem 0.45rem;
+  border-radius: 10px;
+  border: 1px solid;
+  margin-left: 0.4rem;
+  vertical-align: middle;
+  letter-spacing: 0.02em;
+}
+
+/* Cuisine badge (used in RecipeList) */
+.cuisine-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 0.2rem 0.6rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.4rem;
+}
+
 /* CSV Import Preview Modal */
 .csv-import-overlay {
   position: fixed;
