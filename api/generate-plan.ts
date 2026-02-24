@@ -4,6 +4,9 @@ interface Recipe {
   id: string;
   name: string;
   category: 'main' | 'vegetable' | 'grain' | 'other';
+  cuisineType?: string;
+  cookCount?: number;
+  lastCookedDate?: string; // ISO date string (YYYY-MM-DD), most recent week this was cooked
 }
 
 interface MealPlanRequest {
@@ -28,6 +31,18 @@ interface GeneratedPlan {
   sunday: DayMeal;
 }
 
+function formatRecipeEntry(r: Recipe): string {
+  const parts = [`"${r.name}" (id: ${r.id})`];
+  if (r.cuisineType) parts.push(`cuisine: ${r.cuisineType}`);
+  if (r.cookCount !== undefined && r.cookCount > 0) {
+    parts.push(`cooked ${r.cookCount}x`);
+  }
+  if (r.lastCookedDate) {
+    parts.push(`last cooked: ${r.lastCookedDate}`);
+  }
+  return parts.join(', ');
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Only allow POST
   if (req.method !== 'POST') {
@@ -46,7 +61,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Missing prompt or recipes' });
     }
 
-    // Build recipe list for the prompt
+    // Build recipe list for the prompt grouped by category
     const recipesByCategory = {
       main: recipes.filter(r => r.category === 'main'),
       vegetable: recipes.filter(r => r.category === 'vegetable'),
@@ -54,18 +69,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       other: recipes.filter(r => r.category === 'other'),
     };
 
+    const today = new Date().toISOString().split('T')[0];
+
     const systemPrompt = `You are a meal planning assistant. The user will give you instructions for planning their weekly meals.
 
-Available recipes:
-MAIN DISHES: ${recipesByCategory.main.map(r => `"${r.name}" (id: ${r.id})`).join(', ') || 'None'}
-VEGETABLES: ${recipesByCategory.vegetable.map(r => `"${r.name}" (id: ${r.id})`).join(', ') || 'None'}
-GRAINS: ${recipesByCategory.grain.map(r => `"${r.name}" (id: ${r.id})`).join(', ') || 'None'}
-OTHER: ${recipesByCategory.other.map(r => `"${r.name}" (id: ${r.id})`).join(', ') || 'None'}
+Today's date: ${today}
+
+Available recipes (with cuisine type, how often cooked, and when last cooked where available):
+MAIN DISHES: ${recipesByCategory.main.map(formatRecipeEntry).join(' | ') || 'None'}
+VEGETABLES: ${recipesByCategory.vegetable.map(formatRecipeEntry).join(' | ') || 'None'}
+GRAINS: ${recipesByCategory.grain.map(formatRecipeEntry).join(' | ') || 'None'}
+OTHER: ${recipesByCategory.other.map(formatRecipeEntry).join(' | ') || 'None'}
 
 Your task:
 1. Parse the user's meal planning request
 2. Match their requests to available recipes using fuzzy matching (e.g., "chicken" matches any chicken dish)
 3. Fill ALL days with recipes from the available list
+
+When choosing recipes, take into account:
+- CUISINE VARIETY: Spread different cuisine types across the week. Avoid repeating the same cuisine type on back-to-back days unless the user requests it.
+- COOK FREQUENCY: Prefer recipes that haven't been cooked recently. Recipes cooked many times are well-liked; recipes never cooked may be worth trying.
+- LAST COOKED DATE: Deprioritize recipes cooked very recently (within the past 1-2 weeks) to avoid repetition. Prioritize recipes not cooked in a long time or never cooked.
+- USER PREFERENCES: Honor any specific requests the user makes about cuisines, ingredients, or occasions.
 
 Return a JSON object with this exact structure:
 {

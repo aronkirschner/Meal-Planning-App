@@ -3,6 +3,8 @@ import type { Recipe, DayMeal, DayOfWeek } from '../types';
 
 interface AIPlannerInputProps {
   recipes: Recipe[];
+  cookCounts?: Map<string, number>;
+  lastCookedDates?: Map<string, string>;
   onPlanGenerated: (plan: Record<DayOfWeek, DayMeal>) => void;
 }
 
@@ -16,7 +18,7 @@ interface GeneratedPlan {
   sunday: DayMeal;
 }
 
-export function AIPlannerInput({ recipes, onPlanGenerated }: AIPlannerInputProps) {
+export function AIPlannerInput({ recipes, cookCounts, lastCookedDates, onPlanGenerated }: AIPlannerInputProps) {
   const [prompt, setPrompt] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,6 +48,9 @@ export function AIPlannerInput({ recipes, onPlanGenerated }: AIPlannerInputProps
             id: r.id,
             name: r.name,
             category: r.category,
+            cuisineType: r.cuisineType,
+            cookCount: cookCounts?.get(r.id) ?? 0,
+            lastCookedDate: lastCookedDates?.get(r.id),
           })),
         }),
       });

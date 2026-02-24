@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { Recipe, WeekPlan, Family, DayMeal, DayOfWeek } from './types';
+import { inferCuisineType } from './types';
 import {
   addRecipe,
   updateRecipe,
@@ -112,6 +113,46 @@ function MealPlannerApp() {
     }
     return counts;
   }, [allWeekPlans]);
+
+  // Compute the most recent week each recipe was cooked
+  const recipeLastCookedDates = useMemo(() => {
+    const dates = new Map<string, string>();
+    for (const plan of allWeekPlans) {
+      for (const dayMeals of Object.values(plan.days)) {
+        const meal = dayMeals as DayMeal;
+        for (const key of ['main', 'vegetable', 'grain', 'other'] as const) {
+          const value = meal[key];
+          if (value && !value.startsWith('custom:')) {
+            const existing = dates.get(value);
+            if (!existing || plan.weekStart > existing) {
+              dates.set(value, plan.weekStart);
+            }
+          }
+        }
+      }
+    }
+    return dates;
+  }, [allWeekPlans]);
+
+  // Auto-migrate: assign cuisine types to existing recipes that don't have one
+  const cuisineMigrationDone = useRef(false);
+  useEffect(() => {
+    if (cuisineMigrationDone.current || !family || recipes.length === 0) return;
+    cuisineMigrationDone.current = true;
+
+    const toUpdate = recipes
+      .filter(r => !r.cuisineType)
+      .map(r => ({ ...r, cuisineType: inferCuisineType(r) }));
+
+    if (toUpdate.length === 0) return;
+
+    Promise.all(toUpdate.map(r => updateRecipe(family.id, r)))
+      .then(() => {
+        setRecipes(prev => prev.map(r => toUpdate.find(u => u.id === r.id) ?? r));
+      })
+      .catch(err => console.error('Failed to auto-assign cuisine types:', err));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [family?.id, recipes.length]);
 
   const handleAddRecipe = async (recipe: Recipe) => {
     if (!family) return;
@@ -370,6 +411,8 @@ function MealPlannerApp() {
               weekPlan={currentWeekPlan}
               onSave={handleSaveWeekPlan}
               onLoadWeekPlan={handleLoadWeekPlan}
+              cookCounts={recipeCookCounts}
+              lastCookedDates={recipeLastCookedDates}
             />
           </div>
         )}

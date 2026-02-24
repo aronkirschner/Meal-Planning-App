@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import type { Recipe, RecipeCategory, DayOfWeek, DayMeal } from '../types';
-import { DAYS_OF_WEEK } from '../types';
+import type { Recipe, RecipeCategory, CuisineType, DayOfWeek, DayMeal } from '../types';
+import { DAYS_OF_WEEK, CUISINE_TYPES } from '../types';
 import { RecipeForm } from './RecipeForm';
 
 type SortOption = 'az' | 'rating' | 'cooked';
@@ -172,16 +172,19 @@ export function RecipeList({ recipes, onUpdate, onDelete, cookCounts, onAddToWee
   const [filterCategory, setFilterCategory] = useState<RecipeCategory | 'all'>(
     'all'
   );
+  const [filterCuisine, setFilterCuisine] = useState<CuisineType | 'all'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('az');
 
   const filteredRecipes = recipes.filter((recipe) => {
     const matchesCategory =
       filterCategory === 'all' || recipe.category === filterCategory;
+    const matchesCuisine =
+      filterCuisine === 'all' || recipe.cuisineType === filterCuisine;
     const matchesSearch = recipe.name
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
-    return matchesCategory && matchesSearch;
+    return matchesCategory && matchesCuisine && matchesSearch;
   });
 
   const sortedRecipes = useMemo(() => {
@@ -243,6 +246,15 @@ export function RecipeList({ recipes, onUpdate, onDelete, cookCounts, onAddToWee
           <option value="other">Other</option>
         </select>
         <select
+          value={filterCuisine}
+          onChange={(e) => setFilterCuisine(e.target.value as CuisineType | 'all')}
+        >
+          <option value="all">All Cuisines</option>
+          {CUISINE_TYPES.map((c) => (
+            <option key={c} value={c}>{c}</option>
+          ))}
+        </select>
+        <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as SortOption)}
           className="sort-select"
@@ -275,6 +287,9 @@ export function RecipeList({ recipes, onUpdate, onDelete, cookCounts, onAddToWee
                   ) : (
                     <div key={recipe.id} className={`recipe-card ${expandedId === recipe.id ? 'expanded' : ''}`}>
                       <h4>{recipe.name}</h4>
+                      {recipe.cuisineType && (
+                        <span className="cuisine-badge">{recipe.cuisineType}</span>
+                      )}
                       <div className="recipe-meta">
                         <StarRating
                           rating={recipe.rating}

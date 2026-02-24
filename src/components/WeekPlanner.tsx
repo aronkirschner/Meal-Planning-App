@@ -9,6 +9,8 @@ interface WeekPlannerProps {
   weekPlan: WeekPlan | null;
   onSave: (plan: WeekPlan) => void;
   onLoadWeekPlan?: (weekStart: string) => Promise<WeekPlan | undefined>;
+  cookCounts?: Map<string, number>;
+  lastCookedDates?: Map<string, string>;
 }
 
 function getSunday(date: Date): Date {
@@ -211,7 +213,7 @@ function MealSelector({ label, value, recipes, onChange }: MealSelectorProps) {
   );
 }
 
-export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan }: WeekPlannerProps) {
+export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCounts, lastCookedDates }: WeekPlannerProps) {
   const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => {
     if (weekPlan) {
       return parseLocalDate(weekPlan.weekStart);
@@ -340,6 +342,8 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan }: WeekP
       <div className="ai-planner-section">
         <AIPlannerInput
           recipes={recipes}
+          cookCounts={cookCounts}
+          lastCookedDates={lastCookedDates}
           onPlanGenerated={handleAIPlanGenerated}
         />
       </div>

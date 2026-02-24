@@ -1,5 +1,24 @@
 export type RecipeCategory = 'main' | 'vegetable' | 'grain' | 'other';
 
+export type CuisineType =
+  | 'American'
+  | 'Italian'
+  | 'Mexican'
+  | 'Asian'
+  | 'Mediterranean'
+  | 'Indian'
+  | 'Other';
+
+export const CUISINE_TYPES: CuisineType[] = [
+  'American',
+  'Asian',
+  'Indian',
+  'Italian',
+  'Mediterranean',
+  'Mexican',
+  'Other',
+];
+
 export interface Ingredient {
   name: string;
   amount: string;
@@ -11,11 +30,72 @@ export interface Recipe {
   name: string;
   url: string;
   category: RecipeCategory;
+  cuisineType?: CuisineType;
   ingredients: Ingredient[];
   directions: string[];
   notes?: string;
   rating?: number; // 1-5 stars, undefined = unrated
   createdAt: string;
+}
+
+/**
+ * Infer a cuisine type from a recipe's name and ingredients using keyword matching.
+ * Used to auto-assign cuisine types to existing recipes.
+ */
+export function inferCuisineType(recipe: Recipe): CuisineType {
+  const text = [recipe.name, ...recipe.ingredients.map((i) => i.name)]
+    .join(' ')
+    .toLowerCase();
+
+  if (
+    /pasta|pizza|risotto|parmesan|mozzarella|lasagna|fettuccine|penne|spaghetti|marinara|alfredo|tiramisu|gnocchi|bruschetta|pesto|carbonara|bolognese|ravioli|prosciutto|ricotta|italian/.test(
+      text
+    )
+  ) {
+    return 'Italian';
+  }
+
+  if (
+    /taco|burrito|enchilada|quesadilla|guacamole|salsa|jalape|cilantro|tortilla|fajita|nacho|chimichanga|carnitas|pozole|tamale|elote|mexican/.test(
+      text
+    )
+  ) {
+    return 'Mexican';
+  }
+
+  if (
+    /stir.?fry|soy sauce|teriyaki|sushi|ramen|pho|pad thai|fried rice|lo mein|udon|tempura|edamame|kimchi|bulgogi|bibimbap|spring roll|dumpling|dim sum|hoisin|sesame|sriracha|miso|bok choy|daikon|lemongrass|fish sauce|thai|chinese|japanese|korean|vietnamese|asian/.test(
+      text
+    )
+  ) {
+    return 'Asian';
+  }
+
+  if (
+    /curry|tikka|masala|\bdal\b|naan|biryani|samosa|paneer|tandoori|garam masala|turmeric|\bcumin\b|cardamom|chutney|korma|vindaloo|indian/.test(
+      text
+    )
+  ) {
+    return 'Indian';
+  }
+
+  if (
+    /hummus|falafel|\bpita\b|tahini|shawarma|gyro|tzatziki|baba ganoush|tabbouleh|fattoush|halloumi|greek salad|couscous|kebab|moussaka|spanakopita|baklava|\bfeta\b|mediterranean|middle eastern/.test(
+      text
+    )
+  ) {
+    return 'Mediterranean';
+  }
+
+  if (
+    /burger|bbq|barbecue|hot dog|mac.?and.?cheese|buffalo|coleslaw|biscuit|cornbread|pot roast|meatloaf|clam chowder|pulled pork|american/.test(
+      text
+    )
+  ) {
+    return 'American';
+  }
+
+  return 'Other';
 }
 
 export interface DayMeal {

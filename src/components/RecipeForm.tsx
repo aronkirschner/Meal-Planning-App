@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import type { Recipe, RecipeCategory, Ingredient } from '../types';
+import type { Recipe, RecipeCategory, CuisineType, Ingredient } from '../types';
+import { CUISINE_TYPES, inferCuisineType } from '../types';
 import { generateId } from '../firestore-storage';
 import { extractRecipeFromUrl } from '../api';
 
@@ -17,6 +18,9 @@ export function RecipeForm({ onSave, editRecipe, onCancel }: RecipeFormProps) {
   const [name, setName] = useState(editRecipe?.name || '');
   const [category, setCategory] = useState<RecipeCategory>(
     editRecipe?.category || 'main'
+  );
+  const [cuisineType, setCuisineType] = useState<CuisineType>(
+    editRecipe?.cuisineType || 'Other'
   );
   const [ingredients, setIngredients] = useState<Ingredient[]>(
     editRecipe?.ingredients || []
@@ -68,6 +72,23 @@ export function RecipeForm({ onSave, editRecipe, onCancel }: RecipeFormProps) {
           .filter((s) => s.length > 0);
       }
       setDirections(extractedDirections);
+
+      // Auto-infer cuisine type from extracted name + ingredients
+      const extractedIngredients = data.extendedIngredients.map((ing) => ({
+        name: ing.name,
+        amount: ing.amount.toString(),
+        unit: ing.unit,
+      }));
+      const tempRecipe = {
+        id: '',
+        name: data.title,
+        url: url.trim(),
+        category: 'main' as RecipeCategory,
+        ingredients: extractedIngredients,
+        directions: extractedDirections,
+        createdAt: '',
+      };
+      setCuisineType(inferCuisineType(tempRecipe));
 
       setIsExtracted(true);
     } catch (err) {
@@ -137,6 +158,7 @@ export function RecipeForm({ onSave, editRecipe, onCancel }: RecipeFormProps) {
       name: name.trim(),
       url: url.trim(),
       category,
+      cuisineType,
       ingredients: finalIngredients.filter((i) => i.name.trim() !== ''),
       directions: finalDirections,
       notes: notes.trim() || undefined,
@@ -149,6 +171,7 @@ export function RecipeForm({ onSave, editRecipe, onCancel }: RecipeFormProps) {
       setUrl('');
       setName('');
       setCategory('main');
+      setCuisineType('Other');
       setIngredients([]);
       setDirections([]);
       setManualIngredients('');
@@ -259,6 +282,21 @@ export function RecipeForm({ onSave, editRecipe, onCancel }: RecipeFormProps) {
               <option value="vegetable">Vegetable</option>
               <option value="grain">Grain</option>
               <option value="other">Other</option>
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="cuisineType">Cuisine Type</label>
+            <select
+              id="cuisineType"
+              value={cuisineType}
+              onChange={(e) => setCuisineType(e.target.value as CuisineType)}
+            >
+              {CUISINE_TYPES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
             </select>
           </div>
 
