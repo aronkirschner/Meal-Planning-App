@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import type { Recipe, RecipeCategory, DayOfWeek, DayMeal } from '../types';
-import { DAYS_OF_WEEK } from '../types';
+import { DAYS_OF_WEEK, CUISINE_LABELS } from '../types';
 import { RecipeForm } from './RecipeForm';
 
 type SortOption = 'az' | 'rating' | 'cooked';
@@ -283,6 +283,11 @@ export function RecipeList({ recipes, onUpdate, onDelete, cookCounts, onAddToWee
                         <span className="cook-count" title="Times cooked">
                           {cookCounts?.get(recipe.id) || 0}x cooked
                         </span>
+                        {recipe.cuisine && (
+                          <span className="cuisine-badge" title="Cuisine">
+                            {CUISINE_LABELS[recipe.cuisine]}
+                          </span>
+                        )}
                       </div>
                       <a
                         href={recipe.url}

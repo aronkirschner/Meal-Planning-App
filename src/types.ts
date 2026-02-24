@@ -1,5 +1,36 @@
 export type RecipeCategory = 'main' | 'vegetable' | 'grain' | 'other';
 
+export type CuisineType =
+  | 'american'
+  | 'italian'
+  | 'mexican'
+  | 'asian'
+  | 'indian'
+  | 'mediterranean'
+  | 'middle-eastern'
+  | 'french'
+  | 'japanese'
+  | 'chinese'
+  | 'thai'
+  | 'korean'
+  | 'other';
+
+export const CUISINE_LABELS: Record<CuisineType, string> = {
+  american: 'American',
+  italian: 'Italian',
+  mexican: 'Mexican',
+  asian: 'Asian',
+  indian: 'Indian',
+  mediterranean: 'Mediterranean',
+  'middle-eastern': 'Middle Eastern',
+  french: 'French',
+  japanese: 'Japanese',
+  chinese: 'Chinese',
+  thai: 'Thai',
+  korean: 'Korean',
+  other: 'Other',
+};
+
 export interface Ingredient {
   name: string;
   amount: string;
@@ -15,6 +46,7 @@ export interface Recipe {
   directions: string[];
   notes?: string;
   rating?: number; // 1-5 stars, undefined = unrated
+  cuisine?: CuisineType;
   createdAt: string;
 }
 

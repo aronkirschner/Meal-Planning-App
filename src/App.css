@@ -878,6 +878,16 @@
   white-space: nowrap;
 }
 
+.cuisine-badge {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  padding: 0.1rem 0.45rem;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
 /* Add to Week Picker */
 .add-to-week-picker {
   background: var(--bg-secondary);

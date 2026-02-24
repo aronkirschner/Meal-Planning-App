@@ -4,11 +4,17 @@ import { DAYS_OF_WEEK } from '../types';
 import { generateId } from '../firestore-storage';
 import { AIPlannerInput } from './AIPlannerInput';
 
+interface RecipeCookInfo {
+  timesCooked: number;
+  lastCooked: string | null;
+}
+
 interface WeekPlannerProps {
   recipes: Recipe[];
   weekPlan: WeekPlan | null;
   onSave: (plan: WeekPlan) => void;
   onLoadWeekPlan?: (weekStart: string) => Promise<WeekPlan | undefined>;
+  cookInfo?: Map<string, RecipeCookInfo>;
 }
 
 function getSunday(date: Date): Date {
@@ -211,7 +217,7 @@ function MealSelector({ label, value, recipes, onChange }: MealSelectorProps) {
   );
 }
 
-export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan }: WeekPlannerProps) {
+export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookInfo }: WeekPlannerProps) {
   const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => {
     if (weekPlan) {
       return parseLocalDate(weekPlan.weekStart);
@@ -341,6 +347,7 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan }: WeekP
         <AIPlannerInput
           recipes={recipes}
           onPlanGenerated={handleAIPlanGenerated}
+          cookInfo={cookInfo}
         />
       </div>
 
