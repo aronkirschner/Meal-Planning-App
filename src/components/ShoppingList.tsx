@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import type { Recipe, WeekPlan } from '../types';
 import { DAYS_OF_WEEK } from '../types';
 
 interface ShoppingListProps {
   recipes: Recipe[];
   weekPlan: WeekPlan | null;
+  onLoadWeekPlan?: (weekStart: string) => Promise<WeekPlan | undefined>;
 }
 
 interface AggregatedIngredient {
@@ -14,8 +15,74 @@ interface AggregatedIngredient {
 
 const CUSTOM_PREFIX = 'custom:';
 
-export function ShoppingList({ recipes, weekPlan }: ShoppingListProps) {
+function getSunday(date: Date): Date {
+  const d = new Date(date);
+  const day = d.getDay();
+  d.setDate(d.getDate() - day);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function formatDate(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function addDays(date: Date, days: number): Date {
+  const result = new Date(date);
+  result.setDate(result.getDate() + days);
+  return result;
+}
+
+function formatDisplayDate(date: Date): string {
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+export function ShoppingList({ recipes, weekPlan, onLoadWeekPlan }: ShoppingListProps) {
   const [copied, setCopied] = useState(false);
+  const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => getSunday(new Date()));
+  const [displayedPlan, setDisplayedPlan] = useState<WeekPlan | null>(weekPlan);
+  const [loadingWeek, setLoadingWeek] = useState(false);
+
+  // Keep displayedPlan in sync when weekPlan prop changes (initial load)
+  const currentWeekString = formatDate(getSunday(new Date()));
+  if (weekPlan && !displayedPlan && formatDate(currentWeekStart) === currentWeekString) {
+    setDisplayedPlan(weekPlan);
+  }
+
+  const navigateToWeek = useCallback(async (date: Date) => {
+    setCurrentWeekStart(date);
+    const weekStart = formatDate(date);
+
+    // If navigating to current week, use the prop
+    if (weekStart === currentWeekString && weekPlan) {
+      setDisplayedPlan(weekPlan);
+      return;
+    }
+
+    if (onLoadWeekPlan) {
+      setLoadingWeek(true);
+      try {
+        const loaded = await onLoadWeekPlan(weekStart);
+        setDisplayedPlan(loaded || null);
+      } catch (err) {
+        console.error('Failed to load week plan:', err);
+        setDisplayedPlan(null);
+      } finally {
+        setLoadingWeek(false);
+      }
+    } else {
+      setDisplayedPlan(null);
+    }
+  }, [onLoadWeekPlan, weekPlan, currentWeekString]);
+
+  const handlePrevWeek = () => navigateToWeek(addDays(currentWeekStart, -7));
+  const handleNextWeek = () => navigateToWeek(addDays(currentWeekStart, 7));
+  const handleCurrentWeek = () => navigateToWeek(getSunday(new Date()));
+
+  const activePlan = displayedPlan;
 
   const recipeMap = useMemo(() => {
     const map = new Map<string, Recipe>();
@@ -24,7 +91,7 @@ export function ShoppingList({ recipes, weekPlan }: ShoppingListProps) {
   }, [recipes]);
 
   const { ingredients, usedRecipes, customItems } = useMemo(() => {
-    if (!weekPlan) {
+    if (!activePlan) {
       return { ingredients: [], usedRecipes: [], customItems: [] };
     }
 
@@ -33,7 +100,7 @@ export function ShoppingList({ recipes, weekPlan }: ShoppingListProps) {
     const customItemsSet = new Set<string>();
 
     DAYS_OF_WEEK.forEach((day) => {
-      const dayMeals = weekPlan.days[day];
+      const dayMeals = activePlan.days[day];
       const mealTypes: (keyof typeof dayMeals)[] = ['main', 'vegetable', 'grain', 'other'];
 
       mealTypes.forEach((mealType) => {
@@ -82,7 +149,7 @@ export function ShoppingList({ recipes, weekPlan }: ShoppingListProps) {
     const customItemsList = Array.from(customItemsSet).sort();
 
     return { ingredients: sortedIngredients, usedRecipes: usedRecipesList, customItems: customItemsList };
-  }, [weekPlan, recipeMap]);
+  }, [activePlan, recipeMap]);
 
   const formatForTodoist = (): string => {
     const lines: string[] = [];
@@ -109,12 +176,48 @@ export function ShoppingList({ recipes, weekPlan }: ShoppingListProps) {
     }
   };
 
-  if (!weekPlan) {
+  const weekEnd = addDays(currentWeekStart, 6);
+  const isCurrentWeek = formatDate(currentWeekStart) === currentWeekString;
+
+  const weekNav = (
+    <div className="week-navigation">
+      <button onClick={handlePrevWeek} className="btn-secondary">
+        &larr; Previous Week
+      </button>
+      <div className="week-display">
+        <span className="week-dates">
+          {formatDisplayDate(currentWeekStart)} -{' '}
+          {formatDisplayDate(weekEnd)}
+        </span>
+        {!isCurrentWeek && (
+          <button onClick={handleCurrentWeek} className="btn-link">
+            Go to Current Week
+          </button>
+        )}
+      </div>
+      <button onClick={handleNextWeek} className="btn-secondary">
+        Next Week &rarr;
+      </button>
+    </div>
+  );
+
+  if (loadingWeek) {
     return (
       <div className="shopping-list">
         <h3>Shopping List</h3>
+        {weekNav}
+        <p className="no-plan">Loading week plan...</p>
+      </div>
+    );
+  }
+
+  if (!activePlan) {
+    return (
+      <div className="shopping-list">
+        <h3>Shopping List</h3>
+        {weekNav}
         <p className="no-plan">
-          No week plan saved yet. Create and save a week plan to generate a
+          No week plan saved for this week. Create and save a week plan to generate a
           shopping list.
         </p>
       </div>
@@ -127,6 +230,7 @@ export function ShoppingList({ recipes, weekPlan }: ShoppingListProps) {
     return (
       <div className="shopping-list">
         <h3>Shopping List</h3>
+        {weekNav}
         <p className="no-plan">
           No meals selected for this week. Select some meals in the week planner
           to generate a shopping list.
@@ -138,6 +242,7 @@ export function ShoppingList({ recipes, weekPlan }: ShoppingListProps) {
   return (
     <div className="shopping-list">
       <h3>Shopping List</h3>
+      {weekNav}
 
       {(usedRecipes.length > 0 || customItems.length > 0) && (
         <div className="recipes-used">

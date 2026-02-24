@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import type { Recipe, RecipeCategory, Ingredient } from '../types';
+import type { Recipe, RecipeCategory, CuisineType, Ingredient } from '../types';
+import { CUISINE_LABELS } from '../types';
 import { generateId } from '../firestore-storage';
 import { extractRecipeFromUrl } from '../api';
 
@@ -23,6 +24,9 @@ export function RecipeForm({ onSave, editRecipe, onCancel }: RecipeFormProps) {
   );
   const [directions, setDirections] = useState<string[]>(
     editRecipe?.directions || []
+  );
+  const [cuisine, setCuisine] = useState<CuisineType>(
+    editRecipe?.cuisine || 'american'
   );
   const [notes, setNotes] = useState(editRecipe?.notes || '');
   const [isLoading, setIsLoading] = useState(false);
@@ -140,6 +144,7 @@ export function RecipeForm({ onSave, editRecipe, onCancel }: RecipeFormProps) {
       ingredients: finalIngredients.filter((i) => i.name.trim() !== ''),
       directions: finalDirections,
       notes: notes.trim() || undefined,
+      cuisine,
       createdAt: editRecipe?.createdAt || new Date().toISOString(),
     };
 
@@ -149,6 +154,7 @@ export function RecipeForm({ onSave, editRecipe, onCancel }: RecipeFormProps) {
       setUrl('');
       setName('');
       setCategory('main');
+      setCuisine('american');
       setIngredients([]);
       setDirections([]);
       setManualIngredients('');
@@ -259,6 +265,19 @@ export function RecipeForm({ onSave, editRecipe, onCancel }: RecipeFormProps) {
               <option value="vegetable">Vegetable</option>
               <option value="grain">Grain</option>
               <option value="other">Other</option>
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="cuisine">Cuisine</label>
+            <select
+              id="cuisine"
+              value={cuisine}
+              onChange={(e) => setCuisine(e.target.value as CuisineType)}
+            >
+              {(Object.entries(CUISINE_LABELS) as [CuisineType, string][]).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
             </select>
           </div>
 

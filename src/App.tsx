@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import type { Recipe, WeekPlan, Family } from './types';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import type { Recipe, WeekPlan, Family, DayMeal, DayOfWeek, CuisineType } from './types';
 import {
   addRecipe,
   updateRecipe,
@@ -9,6 +9,7 @@ import {
   getWeekPlans,
   getWeekPlan,
   getFamily,
+  generateId,
 } from './firestore-storage';
 import { AuthProvider, useAuth } from './AuthContext';
 import { Login } from './components/Login';
@@ -34,7 +35,33 @@ function getSunday(date: Date): Date {
 }
 
 function formatDate(date: Date): string {
-  return date.toISOString().split('T')[0];
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function inferCuisine(recipe: Recipe): CuisineType {
+  const text = `${recipe.name} ${recipe.ingredients.map(i => i.name).join(' ')}`.toLowerCase();
+
+  const patterns: [CuisineType, RegExp][] = [
+    ['japanese', /\b(sushi|miso|teriyaki|ramen|soba|udon|tempura|edamame|dashi|nori|tofu.*ginger|sake|wasabi|japanese)\b/],
+    ['korean', /\b(kimchi|gochujang|bibimbap|bulgogi|korean|sesame.*oil.*ginger|korean pepper)\b/],
+    ['thai', /\b(thai|pad thai|curry paste|coconut milk.*lime|lemongrass|fish sauce.*lime|galangal|thai basil)\b/],
+    ['chinese', /\b(chinese|stir.?fry|hoisin|five.?spice|wok|szechuan|kung pao|dim sum|bok choy|soy sauce.*ginger.*garlic)\b/],
+    ['indian', /\b(curry|tikka|masala|naan|tandoori|turmeric.*cumin|garam|chana|paneer|dal|biryani|samosa|raita|indian)\b/],
+    ['mexican', /\b(taco|burrito|enchilada|salsa|tortilla|quesadilla|guacamole|chipotle|jalape|cilantro.*lime.*cumin|mexican|chile verde|pozole)\b/],
+    ['italian', /\b(pasta|parmesan|risotto|lasagna|marinara|pesto|bolognese|bruschetta|gnocchi|prosciutto|italian|mozzarella.*basil|oregano.*basil)\b/],
+    ['mediterranean', /\b(hummus|falafel|tahini|greek|tzatziki|pita|olive.*feta|mediterranean|couscous|za'?atar|sumac)\b/],
+    ['middle-eastern', /\b(shawarma|kebab|nakhod|persian|basmati.*saffron|pomegranate|middle.?eastern|fattoush|tabbouleh|chickpea.*yogurt)\b/],
+    ['french', /\b(french|ratatouille|croissant|béchamel|bechamel|gratin|bourguignon|bouillabaisse|crème|creme brulee|dijon)\b/],
+    ['asian', /\b(asian|sesame.*bowl|rice.*noodle|soy sauce|ginger.*sesame|sriracha|orange chicken|general tso)\b/],
+  ];
+
+  for (const [cuisine, pattern] of patterns) {
+    if (pattern.test(text)) return cuisine;
+  }
+  return 'american';
 }
 
 function MealPlannerApp() {
@@ -42,6 +69,7 @@ function MealPlannerApp() {
   const [activeTab, setActiveTab] = useState<Tab>('planner');
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [currentWeekPlan, setCurrentWeekPlan] = useState<WeekPlan | null>(null);
+  const [allWeekPlans, setAllWeekPlans] = useState<WeekPlan[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [dataLoading, setDataLoading] = useState(true);
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -72,8 +100,10 @@ function MealPlannerApp() {
 
       // Fetch week plans
       const fetchedPlans = await getWeekPlans(family.id);
+      setAllWeekPlans(fetchedPlans);
       const weekStart = formatDate(getSunday(new Date()));
-      const plan = fetchedPlans.find((p) => p.weekStart === weekStart);
+      // Use getWeekPlan which deduplicates if multiple docs exist for the same week
+      const plan = await getWeekPlan(family.id, weekStart);
       if (plan) {
         setCurrentWeekPlan(plan);
       }
@@ -88,6 +118,65 @@ function MealPlannerApp() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Auto-assign cuisine to recipes that don't have one
+  useEffect(() => {
+    if (!family || recipes.length === 0) return;
+    const missing = recipes.filter(r => !r.cuisine);
+    if (missing.length === 0) return;
+    // Update each recipe with inferred cuisine
+    (async () => {
+      for (const recipe of missing) {
+        const cuisine = inferCuisine(recipe);
+        await updateRecipe(family.id, { ...recipe, cuisine });
+      }
+      // Refresh recipes after updates
+      const fetchedRecipes = await getRecipes(family.id);
+      setRecipes(fetchedRecipes);
+    })();
+  }, [family, recipes.length]); // only re-run when recipe count changes
+
+  // Compute recipe cook counts from all week plans
+  const recipeCookCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const plan of allWeekPlans) {
+      for (const dayMeals of Object.values(plan.days)) {
+        const meal = dayMeals as DayMeal;
+        for (const key of ['main', 'vegetable', 'grain', 'other'] as const) {
+          const value = meal[key];
+          if (value && !value.startsWith('custom:')) {
+            counts.set(value, (counts.get(value) || 0) + 1);
+          }
+        }
+      }
+    }
+    return counts;
+  }, [allWeekPlans]);
+
+  // Compute richer cook info (count + last cooked) for AI planner
+  const recipeCookInfo = useMemo(() => {
+    const info = new Map<string, { timesCooked: number; lastCooked: string | null }>();
+    for (const plan of allWeekPlans) {
+      for (const dayMeals of Object.values(plan.days)) {
+        const meal = dayMeals as DayMeal;
+        for (const key of ['main', 'vegetable', 'grain', 'other'] as const) {
+          const value = meal[key];
+          if (value && !value.startsWith('custom:')) {
+            const existing = info.get(value);
+            if (existing) {
+              existing.timesCooked++;
+              if (!existing.lastCooked || plan.weekStart > existing.lastCooked) {
+                existing.lastCooked = plan.weekStart;
+              }
+            } else {
+              info.set(value, { timesCooked: 1, lastCooked: plan.weekStart });
+            }
+          }
+        }
+      }
+    }
+    return info;
+  }, [allWeekPlans]);
 
   const handleAddRecipe = async (recipe: Recipe) => {
     if (!family) return;
@@ -143,6 +232,34 @@ function MealPlannerApp() {
   const handleLoadWeekPlan = async (weekStart: string) => {
     if (!family) return undefined;
     return await getWeekPlan(family.id, weekStart);
+  };
+
+  const handleAddRecipeToWeek = async (recipeId: string, day: DayOfWeek, mealType: keyof DayMeal, weekStart: string) => {
+    if (!family) return;
+    const existingPlan = currentWeekPlan?.weekStart === weekStart
+      ? currentWeekPlan
+      : await getWeekPlan(family.id, weekStart);
+
+    const emptyDays: WeekPlan['days'] = {
+      sunday: {}, monday: {}, tuesday: {}, wednesday: {},
+      thursday: {}, friday: {}, saturday: {},
+    };
+
+    const plan: WeekPlan = {
+      id: existingPlan?.id || generateId(),
+      weekStart,
+      days: existingPlan?.days || emptyDays,
+    };
+
+    plan.days[day] = { ...plan.days[day], [mealType]: recipeId };
+
+    try {
+      await saveWeekPlan(family.id, plan);
+      setCurrentWeekPlan(plan);
+    } catch (error) {
+      console.error('Failed to add recipe to week:', error);
+      alert('Failed to add recipe to week plan.');
+    }
   };
 
   const handleFamilySelected = (selectedFamily: Family) => {
@@ -304,6 +421,8 @@ function MealPlannerApp() {
               recipes={recipes}
               onUpdate={handleUpdateRecipe}
               onDelete={handleDeleteRecipe}
+              cookCounts={recipeCookCounts}
+              onAddToWeek={handleAddRecipeToWeek}
             />
           </div>
         )}
@@ -316,13 +435,14 @@ function MealPlannerApp() {
               weekPlan={currentWeekPlan}
               onSave={handleSaveWeekPlan}
               onLoadWeekPlan={handleLoadWeekPlan}
+              cookInfo={recipeCookInfo}
             />
           </div>
         )}
 
         {activeTab === 'shopping' && (
           <div className="shopping-tab">
-            <ShoppingList recipes={recipes} weekPlan={currentWeekPlan} />
+            <ShoppingList recipes={recipes} weekPlan={currentWeekPlan} onLoadWeekPlan={handleLoadWeekPlan} />
           </div>
         )}
 

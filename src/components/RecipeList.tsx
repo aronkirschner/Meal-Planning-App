@@ -1,11 +1,41 @@
-import { useState } from 'react';
-import type { Recipe, RecipeCategory } from '../types';
+import { useState, useMemo, useRef, useEffect } from 'react';
+import type { Recipe, RecipeCategory, DayOfWeek, DayMeal } from '../types';
+import { DAYS_OF_WEEK, CUISINE_LABELS } from '../types';
 import { RecipeForm } from './RecipeForm';
+
+type SortOption = 'az' | 'rating' | 'cooked';
 
 interface RecipeListProps {
   recipes: Recipe[];
   onUpdate: (recipe: Recipe) => void;
   onDelete: (id: string) => void;
+  cookCounts?: Map<string, number>;
+  onAddToWeek?: (recipeId: string, day: DayOfWeek, mealType: keyof DayMeal, weekStart: string) => void;
+}
+
+function StarRating({ rating, onRate }: { rating: number | undefined; onRate: (rating: number) => void }) {
+  const [hovered, setHovered] = useState<number | null>(null);
+  const display = hovered ?? (rating || 0);
+
+  return (
+    <div className="star-rating" onMouseLeave={() => setHovered(null)}>
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          key={star}
+          className={`star-btn ${star <= display ? 'star-filled' : 'star-empty'}`}
+          onMouseEnter={() => setHovered(star)}
+          onClick={(e) => {
+            e.stopPropagation();
+            // Click same rating to clear it
+            onRate(rating === star ? 0 : star);
+          }}
+          title={rating === star ? 'Clear rating' : `Rate ${star} star${star > 1 ? 's' : ''}`}
+        >
+          {star <= display ? '\u2605' : '\u2606'}
+        </button>
+      ))}
+    </div>
+  );
 }
 
 const CATEGORY_LABELS: Record<RecipeCategory, string> = {
@@ -15,13 +45,135 @@ const CATEGORY_LABELS: Record<RecipeCategory, string> = {
   other: 'Other',
 };
 
-export function RecipeList({ recipes, onUpdate, onDelete }: RecipeListProps) {
+const DAY_LABELS: Record<DayOfWeek, string> = {
+  sunday: 'Sunday',
+  monday: 'Monday',
+  tuesday: 'Tuesday',
+  wednesday: 'Wednesday',
+  thursday: 'Thursday',
+  friday: 'Friday',
+  saturday: 'Saturday',
+};
+
+const SLOT_LABELS: Record<keyof DayMeal, string> = {
+  main: 'Main',
+  vegetable: 'Vegetable',
+  grain: 'Grain',
+  other: 'Other',
+};
+
+function getSunday(date: Date): Date {
+  const d = new Date(date);
+  d.setDate(d.getDate() - d.getDay());
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function formatDateISO(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function AddToWeekPicker({ recipe, onAdd, onClose }: {
+  recipe: Recipe;
+  onAdd: (day: DayOfWeek, mealType: keyof DayMeal, weekStart: string) => void;
+  onClose: () => void;
+}) {
+  const [weekOffset, setWeekOffset] = useState(0); // 0 = this week, 1 = next week
+  const [day, setDay] = useState<DayOfWeek>(DAYS_OF_WEEK[0]);
+  const [slot, setSlot] = useState<keyof DayMeal>(recipe.category);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const thisSunday = getSunday(new Date());
+  const selectedSunday = useMemo(() => {
+    const d = new Date(thisSunday);
+    d.setDate(d.getDate() + weekOffset * 7);
+    return d;
+  }, [thisSunday.getTime(), weekOffset]);
+
+  const weekStart = formatDateISO(selectedSunday);
+
+  const dayDates = useMemo(() => {
+    return DAYS_OF_WEEK.map((d, i) => {
+      const date = new Date(selectedSunday);
+      date.setDate(date.getDate() + i);
+      const label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      return { key: d, label: `${DAY_LABELS[d]} ${label}` };
+    });
+  }, [selectedSunday.getTime()]);
+
+  const weekEnd = new Date(selectedSunday);
+  weekEnd.setDate(weekEnd.getDate() + 6);
+  const weekLabel = `${selectedSunday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        onClose();
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [onClose]);
+
+  return (
+    <div className="add-to-week-picker" ref={ref}>
+      <div className="add-to-week-header">
+        <div className="add-to-week-tabs">
+          <button
+            className={`add-to-week-tab ${weekOffset === 0 ? 'active' : ''}`}
+            onClick={() => setWeekOffset(0)}
+          >
+            This Week
+          </button>
+          <button
+            className={`add-to-week-tab ${weekOffset === 1 ? 'active' : ''}`}
+            onClick={() => setWeekOffset(1)}
+          >
+            Next Week
+          </button>
+        </div>
+        <span className="add-to-week-dates">{weekLabel}</span>
+      </div>
+      <div className="add-to-week-row">
+        <select value={day} onChange={(e) => setDay(e.target.value as DayOfWeek)}>
+          {dayDates.map((d) => (
+            <option key={d.key} value={d.key}>{d.label}</option>
+          ))}
+        </select>
+        <select value={slot} onChange={(e) => setSlot(e.target.value as keyof DayMeal)}>
+          {(['main', 'vegetable', 'grain', 'other'] as const).map((s) => (
+            <option key={s} value={s}>{SLOT_LABELS[s]}</option>
+          ))}
+        </select>
+        <button
+          className="btn-primary btn-sm"
+          onClick={() => {
+            onAdd(day, slot, weekStart);
+            onClose();
+          }}
+        >
+          Add
+        </button>
+        <button className="btn-secondary btn-sm" onClick={onClose}>
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export function RecipeList({ recipes, onUpdate, onDelete, cookCounts, onAddToWeek }: RecipeListProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [addToWeekId, setAddToWeekId] = useState<string | null>(null);
   const [filterCategory, setFilterCategory] = useState<RecipeCategory | 'all'>(
     'all'
   );
   const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState<SortOption>('az');
 
   const filteredRecipes = recipes.filter((recipe) => {
     const matchesCategory =
@@ -32,7 +184,23 @@ export function RecipeList({ recipes, onUpdate, onDelete }: RecipeListProps) {
     return matchesCategory && matchesSearch;
   });
 
-  const groupedRecipes = filteredRecipes.reduce(
+  const sortedRecipes = useMemo(() => {
+    const sorted = [...filteredRecipes];
+    switch (sortBy) {
+      case 'az':
+        sorted.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case 'rating':
+        sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0) || a.name.localeCompare(b.name));
+        break;
+      case 'cooked':
+        sorted.sort((a, b) => (cookCounts?.get(b.id) || 0) - (cookCounts?.get(a.id) || 0) || a.name.localeCompare(b.name));
+        break;
+    }
+    return sorted;
+  }, [filteredRecipes, sortBy, cookCounts]);
+
+  const groupedRecipes = sortedRecipes.reduce(
     (acc, recipe) => {
       if (!acc[recipe.category]) {
         acc[recipe.category] = [];
@@ -74,6 +242,15 @@ export function RecipeList({ recipes, onUpdate, onDelete }: RecipeListProps) {
           <option value="grain">Grains</option>
           <option value="other">Other</option>
         </select>
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value as SortOption)}
+          className="sort-select"
+        >
+          <option value="az">Sort: A-Z</option>
+          <option value="rating">Sort: Rating</option>
+          <option value="cooked">Sort: Times Cooked</option>
+        </select>
       </div>
 
       {filteredRecipes.length === 0 ? (
@@ -98,6 +275,20 @@ export function RecipeList({ recipes, onUpdate, onDelete }: RecipeListProps) {
                   ) : (
                     <div key={recipe.id} className={`recipe-card ${expandedId === recipe.id ? 'expanded' : ''}`}>
                       <h4>{recipe.name}</h4>
+                      <div className="recipe-meta">
+                        <StarRating
+                          rating={recipe.rating}
+                          onRate={(r) => onUpdate({ ...recipe, rating: r || undefined })}
+                        />
+                        <span className="cook-count" title="Times cooked">
+                          {cookCounts?.get(recipe.id) || 0}x cooked
+                        </span>
+                        {recipe.cuisine && (
+                          <span className="cuisine-badge" title="Cuisine">
+                            {CUISINE_LABELS[recipe.cuisine]}
+                          </span>
+                        )}
+                      </div>
                       <a
                         href={recipe.url}
                         target="_blank"
@@ -166,7 +357,23 @@ export function RecipeList({ recipes, onUpdate, onDelete }: RecipeListProps) {
                         </>
                       )}
 
+                      {addToWeekId === recipe.id && onAddToWeek && (
+                        <AddToWeekPicker
+                          recipe={recipe}
+                          onAdd={(day, mealType, weekStart) => onAddToWeek(recipe.id, day, mealType, weekStart)}
+                          onClose={() => setAddToWeekId(null)}
+                        />
+                      )}
+
                       <div className="recipe-actions">
+                        {onAddToWeek && (
+                          <button
+                            onClick={() => setAddToWeekId(addToWeekId === recipe.id ? null : recipe.id)}
+                            className="btn-primary btn-sm"
+                          >
+                            + Add to Week
+                          </button>
+                        )}
                         <button
                           onClick={() => toggleExpanded(recipe.id)}
                           className="btn-secondary btn-sm"

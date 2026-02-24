@@ -1,9 +1,15 @@
 import { useState } from 'react';
 import type { Recipe, DayMeal, DayOfWeek } from '../types';
 
+interface RecipeCookInfo {
+  timesCooked: number;
+  lastCooked: string | null;
+}
+
 interface AIPlannerInputProps {
   recipes: Recipe[];
   onPlanGenerated: (plan: Record<DayOfWeek, DayMeal>) => void;
+  cookInfo?: Map<string, RecipeCookInfo>;
 }
 
 interface GeneratedPlan {
@@ -16,7 +22,7 @@ interface GeneratedPlan {
   sunday: DayMeal;
 }
 
-export function AIPlannerInput({ recipes, onPlanGenerated }: AIPlannerInputProps) {
+export function AIPlannerInput({ recipes, onPlanGenerated, cookInfo }: AIPlannerInputProps) {
   const [prompt, setPrompt] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,11 +48,18 @@ export function AIPlannerInput({ recipes, onPlanGenerated }: AIPlannerInputProps
         },
         body: JSON.stringify({
           prompt: prompt.trim(),
-          recipes: recipes.map(r => ({
-            id: r.id,
-            name: r.name,
-            category: r.category,
-          })),
+          recipes: recipes.map(r => {
+            const info = cookInfo?.get(r.id);
+            return {
+              id: r.id,
+              name: r.name,
+              category: r.category,
+              cuisine: r.cuisine || 'american',
+              rating: r.rating || null,
+              timesCooked: info?.timesCooked || 0,
+              lastCooked: info?.lastCooked || null,
+            };
+          }),
         }),
       });
 
