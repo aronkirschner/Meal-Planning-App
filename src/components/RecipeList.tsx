@@ -287,9 +287,14 @@ export function RecipeList({ recipes, onUpdate, onDelete, cookCounts, onAddToWee
                   ) : (
                     <div key={recipe.id} className={`recipe-card ${expandedId === recipe.id ? 'expanded' : ''}`}>
                       <h4>{recipe.name}</h4>
-                      {recipe.cuisineType && (
-                        <span className="cuisine-badge">{recipe.cuisineType}</span>
-                      )}
+                      <div className="recipe-badges">
+                        {recipe.cuisineType && (
+                          <span className="cuisine-badge">{recipe.cuisineType}</span>
+                        )}
+                        {recipe.category === 'main' && recipe.proteinType && (
+                          <span className="protein-badge">{recipe.proteinType}</span>
+                        )}
+                      </div>
                       <div className="recipe-meta">
                         <StarRating
                           rating={recipe.rating}

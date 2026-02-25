@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import type { Recipe, RecipeCategory, CuisineType, Ingredient } from '../types';
-import { CUISINE_TYPES, inferCuisineType } from '../types';
+import type { Recipe, RecipeCategory, CuisineType, ProteinType, Ingredient } from '../types';
+import { CUISINE_TYPES, PROTEIN_TYPES, inferCuisineType } from '../types';
 import { generateId } from '../firestore-storage';
 import { extractRecipeFromUrl } from '../api';
 
@@ -21,6 +21,9 @@ export function RecipeForm({ onSave, editRecipe, onCancel }: RecipeFormProps) {
   );
   const [cuisineType, setCuisineType] = useState<CuisineType>(
     editRecipe?.cuisineType || 'Other'
+  );
+  const [proteinType, setProteinType] = useState<ProteinType | undefined>(
+    editRecipe?.proteinType
   );
   const [ingredients, setIngredients] = useState<Ingredient[]>(
     editRecipe?.ingredients || []
@@ -159,6 +162,7 @@ export function RecipeForm({ onSave, editRecipe, onCancel }: RecipeFormProps) {
       url: url.trim(),
       category,
       cuisineType,
+      proteinType: category === 'main' ? proteinType : undefined,
       ingredients: finalIngredients.filter((i) => i.name.trim() !== ''),
       directions: finalDirections,
       notes: notes.trim() || undefined,
@@ -172,6 +176,7 @@ export function RecipeForm({ onSave, editRecipe, onCancel }: RecipeFormProps) {
       setName('');
       setCategory('main');
       setCuisineType('Other');
+      setProteinType(undefined);
       setIngredients([]);
       setDirections([]);
       setManualIngredients('');
@@ -299,6 +304,26 @@ export function RecipeForm({ onSave, editRecipe, onCancel }: RecipeFormProps) {
               ))}
             </select>
           </div>
+
+          {category === 'main' && (
+            <div className="form-group">
+              <label htmlFor="proteinType">Protein Type</label>
+              <select
+                id="proteinType"
+                value={proteinType || ''}
+                onChange={(e) =>
+                  setProteinType((e.target.value as ProteinType) || undefined)
+                }
+              >
+                <option value="">— Select protein —</option>
+                {PROTEIN_TYPES.map((p) => (
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {entryMode === 'url' || editRecipe ? (
             <div className="form-group">

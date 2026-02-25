@@ -25,12 +25,34 @@ export interface Ingredient {
   unit: string;
 }
 
+export type ProteinType =
+  | 'Beef'
+  | 'Chicken'
+  | 'Pork'
+  | 'Seafood'
+  | 'Lamb'
+  | 'Turkey'
+  | 'Vegetarian'
+  | 'Vegan';
+
+export const PROTEIN_TYPES: ProteinType[] = [
+  'Beef',
+  'Chicken',
+  'Lamb',
+  'Pork',
+  'Seafood',
+  'Turkey',
+  'Vegetarian',
+  'Vegan',
+];
+
 export interface Recipe {
   id: string;
   name: string;
   url: string;
   category: RecipeCategory;
   cuisineType?: CuisineType;
+  proteinType?: ProteinType; // only relevant for mains
   ingredients: Ingredient[];
   directions: string[];
   notes?: string;

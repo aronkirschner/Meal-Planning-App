@@ -1919,6 +1919,14 @@
   letter-spacing: 0.02em;
 }
 
+/* Recipe badges wrapper (cuisine + protein) */
+.recipe-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.4rem;
+}
+
 /* Cuisine badge (used in RecipeList) */
 .cuisine-badge {
   display: inline-block;
@@ -1928,7 +1936,25 @@
   border-radius: 12px;
   padding: 0.2rem 0.6rem;
   color: var(--text-secondary);
-  margin-bottom: 0.4rem;
+}
+
+/* Protein badge (mains only) */
+.protein-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  background: #fdf0e8;
+  border: 1px solid #f0c090;
+  border-radius: 12px;
+  padding: 0.2rem 0.6rem;
+  color: #a05010;
+}
+
+@media (prefers-color-scheme: dark) {
+  .protein-badge {
+    background: #3a2010;
+    border-color: #7a4020;
+    color: #e0a060;
+  }
 }
 
 /* CSV Import Preview Modal */
