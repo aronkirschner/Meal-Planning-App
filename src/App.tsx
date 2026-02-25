@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { Recipe, WeekPlan, Family, DayMeal, DayOfWeek } from './types';
-import { inferCuisineType } from './types';
+import { inferCuisineType, inferProteinType } from './types';
 import {
   addRecipe,
   updateRecipe,
@@ -151,6 +151,29 @@ function MealPlannerApp() {
         setRecipes(prev => prev.map(r => toUpdate.find(u => u.id === r.id) ?? r));
       })
       .catch(err => console.error('Failed to auto-assign cuisine types:', err));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [family?.id, recipes.length]);
+
+  // Auto-migrate: infer protein types for existing main dish recipes that don't have one
+  const proteinMigrationDone = useRef(false);
+  useEffect(() => {
+    if (proteinMigrationDone.current || !family || recipes.length === 0) return;
+    proteinMigrationDone.current = true;
+
+    const toUpdate = recipes
+      .filter(r => r.category === 'main' && !r.proteinType)
+      .flatMap(r => {
+        const inferred = inferProteinType(r);
+        return inferred ? [{ ...r, proteinType: inferred }] : [];
+      });
+
+    if (toUpdate.length === 0) return;
+
+    Promise.all(toUpdate.map(r => updateRecipe(family.id, r)))
+      .then(() => {
+        setRecipes(prev => prev.map(r => toUpdate.find(u => u.id === r.id) ?? r));
+      })
+      .catch(err => console.error('Failed to auto-assign protein types:', err));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [family?.id, recipes.length]);
 

@@ -120,7 +120,55 @@ export function inferCuisineType(recipe: Recipe): CuisineType {
   return 'Other';
 }
 
-export interface DayMeal {
+/**
+ * Infer a protein type from a main dish recipe's name and ingredients.
+ */
+export function inferProteinType(recipe: Recipe): ProteinType | undefined {
+  if (recipe.category !== 'main') return undefined;
+
+  const text = [recipe.name, ...recipe.ingredients.map((i) => i.name)]
+    .join(' ')
+    .toLowerCase();
+
+  if (/\bturkey\b/.test(text)) return 'Turkey';
+
+  if (/\blamb\b|\bmutton\b/.test(text)) return 'Lamb';
+
+  if (
+    /\bbeef\b|\bsteak\b|\bbrisket\b|\bchuck\b|\bribeye\b|\bsirloin\b|\bground beef\b|\bpot roast\b|\bcorned beef\b|\bshort rib/.test(
+      text
+    )
+  )
+    return 'Beef';
+
+  if (/\bchicken\b|\bpoultry\b|\bhen\b|\brotisserie\b/.test(text))
+    return 'Chicken';
+
+  if (
+    /\bpork\b|\bbacon\b|\b(ham)\b|\bsausage\b|\bchorizo\b|\bprosciutto\b|\bpancetta\b/.test(
+      text
+    )
+  )
+    return 'Pork';
+
+  if (
+    /\bsalmon\b|\btuna\b|\bshrimp\b|\bprawns?\b|\bcod\b|\btilapia\b|\bhalibut\b|\bcrab\b|\blobster\b|\bclam\b|\boyster\b|\bscallop\b|\bmussels?\b|\bsea bass\b|\btrout\b|\bflounder\b|\banchov\b|\bsardin\b|\bsquid\b|\bcalamari\b|\bseafood\b|\bfish\b/.test(
+      text
+    )
+  )
+    return 'Seafood';
+
+  if (/\bvegan\b/.test(text)) return 'Vegan';
+
+  if (
+    /\btofu\b|\btempeh\b|\blentil\b|\bchickpea\b|\bblack bean\b|\bkidney bean\b|\bvegetarian\b|\bveggie\b/.test(
+      text
+    )
+  )
+    return 'Vegetarian';
+
+  return undefined;
+}
   main?: string; // Recipe ID or "custom:text"
   vegetable?: string; // Recipe ID or "custom:text"
   grain?: string; // Recipe ID or "custom:text"
