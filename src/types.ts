@@ -169,6 +169,8 @@ export function inferProteinType(recipe: Recipe): ProteinType | undefined {
 
   return undefined;
 }
+
+export interface DayMeal {
   main?: string; // Recipe ID or "custom:text"
   vegetable?: string; // Recipe ID or "custom:text"
   grain?: string; // Recipe ID or "custom:text"
