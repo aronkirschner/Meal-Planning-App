@@ -237,6 +237,8 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(
     weekPlan?.id || null
   );
+  const [viewMode, setViewMode] = useState<'edit' | 'view'>('edit');
+  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
 
   // Sync days when weekPlan prop loads asynchronously
   useEffect(() => {
@@ -319,8 +321,70 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
 
   const weekEnd = addDays(currentWeekStart, 6);
 
+  const recipeMap = useMemo(
+    () => new Map(recipes.map((r) => [r.id, r])),
+    [recipes]
+  );
+
   return (
     <div className="week-planner">
+      {selectedRecipe && (
+        <div className="recipe-modal-overlay" onClick={() => setSelectedRecipe(null)}>
+          <div className="recipe-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="recipe-modal-close" onClick={() => setSelectedRecipe(null)}>
+              &times;
+            </button>
+            <h2 className="recipe-modal-title">{selectedRecipe.name}</h2>
+            <div className="recipe-modal-badges">
+              {selectedRecipe.cuisineType && (
+                <span className="cuisine-badge">{selectedRecipe.cuisineType}</span>
+              )}
+              {selectedRecipe.category === 'main' && selectedRecipe.proteinType && (
+                <span className="protein-badge">{selectedRecipe.proteinType}</span>
+              )}
+            </div>
+            {selectedRecipe.url && (
+              <a
+                href={selectedRecipe.url}
+                target="_blank"
+                rel="noreferrer"
+                className="recipe-modal-link"
+              >
+                View Full Recipe &rarr;
+              </a>
+            )}
+            {selectedRecipe.ingredients.length > 0 && (
+              <div className="recipe-modal-section">
+                <h4>Ingredients</h4>
+                <ul className="recipe-modal-ingredients">
+                  {selectedRecipe.ingredients.map((ing, i) => (
+                    <li key={i}>
+                      {[ing.amount, ing.unit, ing.name].filter(Boolean).join(' ')}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {selectedRecipe.directions.length > 0 && (
+              <div className="recipe-modal-section">
+                <h4>Directions</h4>
+                <ol className="recipe-modal-directions">
+                  {selectedRecipe.directions.map((step, i) => (
+                    <li key={i}>{step}</li>
+                  ))}
+                </ol>
+              </div>
+            )}
+            {selectedRecipe.notes && (
+              <div className="recipe-modal-section">
+                <h4>Notes</h4>
+                <p className="recipe-modal-notes">{selectedRecipe.notes}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="week-navigation">
         <button onClick={handlePreviousWeek} className="btn-secondary">
           Previous Week
@@ -339,72 +403,147 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
         </button>
       </div>
 
-      <div className="ai-planner-section">
-        <AIPlannerInput
-          recipes={recipes}
-          cookCounts={cookCounts}
-          lastCookedDates={lastCookedDates}
-          onPlanGenerated={handleAIPlanGenerated}
-        />
-      </div>
-
-      <div className="week-grid">
-        {DAYS_OF_WEEK.map((day, index) => {
-          const dayDate = addDays(currentWeekStart, index);
-          return (
-            <div key={day} className="day-column">
-              <div className="day-header">
-                <strong>{DAY_LABELS[day]}</strong>
-                <span className="day-date">{formatDisplayDate(dayDate)}</span>
-              </div>
-
-              <MealSelector
-                label="Main Dish"
-                value={days[day].main || ''}
-                recipes={mainRecipes}
-                onChange={(value) => handleMealChange(day, 'main', value)}
-              />
-
-              <MealSelector
-                label="Vegetable"
-                value={days[day].vegetable || ''}
-                recipes={vegetableRecipes}
-                onChange={(value) => handleMealChange(day, 'vegetable', value)}
-              />
-
-              <MealSelector
-                label="Grain"
-                value={days[day].grain || ''}
-                recipes={grainRecipes}
-                onChange={(value) => handleMealChange(day, 'grain', value)}
-              />
-
-              <MealSelector
-                label="Other"
-                value={days[day].other || ''}
-                recipes={otherRecipes}
-                onChange={(value) => handleMealChange(day, 'other', value)}
-              />
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="planner-actions">
+      <div className="planner-mode-toggle">
         <button
-          onClick={() => {
-            if (window.confirm('Clear all meals for this week?')) {
-              setDays({ ...emptyDays });
-            }
-          }}
-          className="btn-secondary"
+          className={`mode-btn ${viewMode === 'edit' ? 'active' : ''}`}
+          onClick={() => setViewMode('edit')}
         >
-          Clear Week
+          Edit
         </button>
-        <button onClick={handleSave} className="btn-primary">
-          Save Week Plan
+        <button
+          className={`mode-btn ${viewMode === 'view' ? 'active' : ''}`}
+          onClick={() => setViewMode('view')}
+        >
+          View
         </button>
       </div>
+
+      {viewMode === 'edit' && (
+        <>
+          <div className="ai-planner-section">
+            <AIPlannerInput
+              recipes={recipes}
+              cookCounts={cookCounts}
+              lastCookedDates={lastCookedDates}
+              onPlanGenerated={handleAIPlanGenerated}
+            />
+          </div>
+
+          <div className="week-grid">
+            {DAYS_OF_WEEK.map((day, index) => {
+              const dayDate = addDays(currentWeekStart, index);
+              return (
+                <div key={day} className="day-column">
+                  <div className="day-header">
+                    <strong>{DAY_LABELS[day]}</strong>
+                    <span className="day-date">{formatDisplayDate(dayDate)}</span>
+                  </div>
+
+                  <MealSelector
+                    label="Main Dish"
+                    value={days[day].main || ''}
+                    recipes={mainRecipes}
+                    onChange={(value) => handleMealChange(day, 'main', value)}
+                  />
+
+                  <MealSelector
+                    label="Vegetable"
+                    value={days[day].vegetable || ''}
+                    recipes={vegetableRecipes}
+                    onChange={(value) => handleMealChange(day, 'vegetable', value)}
+                  />
+
+                  <MealSelector
+                    label="Grain"
+                    value={days[day].grain || ''}
+                    recipes={grainRecipes}
+                    onChange={(value) => handleMealChange(day, 'grain', value)}
+                  />
+
+                  <MealSelector
+                    label="Other"
+                    value={days[day].other || ''}
+                    recipes={otherRecipes}
+                    onChange={(value) => handleMealChange(day, 'other', value)}
+                  />
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="planner-actions">
+            <button
+              onClick={() => {
+                if (window.confirm('Clear all meals for this week?')) {
+                  setDays({ ...emptyDays });
+                }
+              }}
+              className="btn-secondary"
+            >
+              Clear Week
+            </button>
+            <button onClick={handleSave} className="btn-primary">
+              Save Week Plan
+            </button>
+          </div>
+        </>
+      )}
+
+      {viewMode === 'view' && (
+        <div className="week-view">
+          {DAYS_OF_WEEK.map((day, index) => {
+            const dayDate = addDays(currentWeekStart, index);
+            const meal = days[day];
+            const slots = [
+              { key: 'main', label: 'Main', value: meal.main },
+              { key: 'vegetable', label: 'Veg', value: meal.vegetable },
+              { key: 'grain', label: 'Grain', value: meal.grain },
+              { key: 'other', label: 'Other', value: meal.other },
+            ] as const;
+            const hasAnyMeal = slots.some((s) => s.value);
+
+            return (
+              <div key={day} className="week-view-day">
+                <div className="week-view-day-header">
+                  <span className="week-view-day-name">{DAY_LABELS[day]}</span>
+                  <span className="week-view-day-date">{formatDisplayDate(dayDate)}</span>
+                </div>
+                <div className="week-view-meals">
+                  {slots.map(({ key, label, value }) => {
+                    if (!value) return null;
+                    const isCustom = value.startsWith(CUSTOM_PREFIX);
+                    const recipe = !isCustom ? recipeMap.get(value) : undefined;
+                    const displayName = isCustom
+                      ? value.slice(CUSTOM_PREFIX.length)
+                      : recipe?.name || value;
+
+                    return (
+                      <div key={key} className="week-view-meal">
+                        <span className="week-view-meal-label">{label}</span>
+                        {recipe ? (
+                          <button
+                            className="week-view-meal-name"
+                            onClick={() => setSelectedRecipe(recipe)}
+                          >
+                            {displayName}
+                          </button>
+                        ) : (
+                          <span className="week-view-meal-name week-view-meal-custom">
+                            {displayName || '—'}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {!hasAnyMeal && (
+                    <span className="week-view-empty">No meals planned</span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
