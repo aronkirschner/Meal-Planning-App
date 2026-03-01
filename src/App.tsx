@@ -23,6 +23,7 @@ import { WeekPlanner } from './components/WeekPlanner';
 import { ShoppingList } from './components/ShoppingList';
 import { CommunityRecipes } from './components/CommunityRecipes';
 import { CookingAnalytics } from './components/CookingAnalytics';
+import { XLSRecipeImport } from './components/XLSRecipeImport';
 import './App.css';
 
 type Tab = 'recipes' | 'planner' | 'shopping' | 'community' | 'analytics';
@@ -52,6 +53,7 @@ function MealPlannerApp() {
   const [dataLoading, setDataLoading] = useState(true);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showPaprikaImport, setShowPaprikaImport] = useState(false);
+  const [showXLSImport, setShowXLSImport] = useState(false);
 
   // Load family data if user has a familyId
   useEffect(() => {
@@ -394,6 +396,12 @@ function MealPlannerApp() {
                   Import from Paprika
                 </button>
                 <button
+                  onClick={() => setShowXLSImport(true)}
+                  className="btn-secondary"
+                >
+                  Import from XLS
+                </button>
+                <button
                   onClick={() => setShowAddForm(!showAddForm)}
                   className="btn-primary"
                 >
@@ -406,6 +414,14 @@ function MealPlannerApp() {
               <PaprikaImport
                 onImport={handleImportRecipes}
                 onClose={() => setShowPaprikaImport(false)}
+              />
+            )}
+
+            {showXLSImport && (
+              <XLSRecipeImport
+                existingRecipes={recipes}
+                onImport={handleImportRecipes}
+                onClose={() => setShowXLSImport(false)}
               />
             )}
 
