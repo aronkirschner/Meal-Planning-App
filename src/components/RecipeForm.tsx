@@ -40,6 +40,11 @@ export function RecipeForm({ onSave, editRecipe, onCancel }: RecipeFormProps) {
   const [manualIngredients, setManualIngredients] = useState('');
   const [manualDirections, setManualDirections] = useState('');
 
+  // A placeholder is an existing recipe with no ingredients and no directions
+  const isPlaceholder = !!editRecipe &&
+    editRecipe.ingredients.length === 0 &&
+    editRecipe.directions.length === 0;
+
   const handleExtract = async () => {
     if (!url.trim()) {
       setError('Please enter a recipe URL');
@@ -96,6 +101,57 @@ export function RecipeForm({ onSave, editRecipe, onCancel }: RecipeFormProps) {
       setIsExtracted(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to extract recipe');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEnrich = async () => {
+    if (!url.trim()) {
+      setError('Please enter a URL to enrich this recipe');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const data = await extractRecipeFromUrl(url.trim());
+
+      const extractedIngredients = data.extendedIngredients.map((ing) => ({
+        name: ing.name,
+        amount: ing.amount.toString(),
+        unit: ing.unit,
+      }));
+      setIngredients(extractedIngredients);
+
+      let extractedDirections: string[] = [];
+      if (data.analyzedInstructions && data.analyzedInstructions.length > 0) {
+        extractedDirections = data.analyzedInstructions[0].steps.map(
+          (step) => step.step
+        );
+      } else if (data.instructions) {
+        extractedDirections = data.instructions
+          .split(/(?:\r?\n)+|(?<=\.)\s+/)
+          .map((s) => s.trim())
+          .filter((s) => s.length > 0);
+      }
+      setDirections(extractedDirections);
+
+      // Re-infer cuisine from the enriched data, keeping the existing name
+      setCuisineType(
+        inferCuisineType({
+          id: '',
+          name,
+          url: url.trim(),
+          category,
+          ingredients: extractedIngredients,
+          directions: extractedDirections,
+          createdAt: '',
+        })
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to enrich recipe');
     } finally {
       setIsLoading(false);
     }
@@ -243,6 +299,16 @@ export function RecipeForm({ onSave, editRecipe, onCancel }: RecipeFormProps) {
                 disabled={isLoading || !url.trim()}
               >
                 {isLoading ? 'Extracting...' : 'Extract'}
+              </button>
+            )}
+            {isPlaceholder && (
+              <button
+                type="button"
+                onClick={handleEnrich}
+                className="btn-primary"
+                disabled={isLoading || !url.trim()}
+              >
+                {isLoading ? 'Enriching...' : 'Enrich from URL'}
               </button>
             )}
           </div>
