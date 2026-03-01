@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import * as XLSX from 'xlsx';
+import readXlsxFile from 'read-excel-file/browser';
 import type { Recipe, RecipeCategory, CuisineType, ProteinType } from '../types';
 import { CUISINE_TYPES, PROTEIN_TYPES } from '../types';
 import { generateId } from '../firestore-storage';
@@ -81,26 +81,33 @@ function normalizeProtein(raw: string, category: RecipeCategory): { protein: Pro
   return { protein: undefined, warn: true };
 }
 
-function parseSheet(workbook: XLSX.WorkBook, existingNames: Set<string>): ParsedRow[] {
-  const sheet = workbook.Sheets[workbook.SheetNames[0]];
-  // Use header row as object keys
-  const rawRows: Record<string, string>[] = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+async function parseFile(file: File, existingNames: Set<string>): Promise<ParsedRow[]> {
+  const rows = await readXlsxFile(file);
+  if (rows.length < 2) throw new Error('File must have a header row and at least one data row');
+
+  // Case-insensitive header matching
+  const headers = rows[0].map((h) => String(h ?? '').trim().toLowerCase());
+  const col = (name: string) => headers.indexOf(name.toLowerCase());
+
+  const foodItemIdx = col('food item');
+  const itemTypeIdx = col('item type');
+  const cuisineIdx = col('cuisine');
+  const proteinIdx = col('protein type');
+
+  if (foodItemIdx === -1) throw new Error('Missing required column: "Food Item"');
 
   const results: ParsedRow[] = [];
 
-  for (const raw of rawRows) {
-    // Case-insensitive column lookup
-    const get = (key: string): string => {
-      const found = Object.keys(raw).find((k) => k.trim().toLowerCase() === key.toLowerCase());
-      return found ? String(raw[found] ?? '').trim() : '';
-    };
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    const get = (idx: number) => (idx !== -1 ? String(row[idx] ?? '').trim() : '');
 
-    const name = get('Food Item');
+    const name = get(foodItemIdx);
     if (!name) continue;
 
-    const itemTypeRaw = get('Item Type');
-    const cuisineRaw = get('Cuisine');
-    const proteinRaw = get('Protein Type');
+    const itemTypeRaw = get(itemTypeIdx);
+    const cuisineRaw = get(cuisineIdx);
+    const proteinRaw = get(proteinIdx);
 
     const warnings: string[] = [];
 
@@ -141,13 +148,8 @@ export function XLSRecipeImport({ existingRecipes, onImport, onClose }: XLSRecip
     setParseError(null);
 
     try {
-      const buffer = await file.arrayBuffer();
-      const workbook = XLSX.read(buffer, { type: 'array' });
-      if (!workbook.SheetNames.length) throw new Error('No sheets found in file');
-
-      const parsed = parseSheet(workbook, existingNames);
+      const parsed = await parseFile(file, existingNames);
       if (parsed.length === 0) throw new Error('No valid rows found. Make sure the file has a "Food Item" column.');
-
       setRows(parsed);
       setStep('preview');
     } catch (err) {
