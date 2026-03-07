@@ -242,15 +242,21 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
   // Stable ref for plan ID so auto-save always uses the same ID within a week
   const stablePlanIdRef = useRef<string | null>(weekPlan?.id || null);
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Track which weekStart we've already initialized days for, to avoid overwriting
+  // local state when auto-save triggers a weekPlan prop update.
+  const initializedWeekRef = useRef<string | null>(
+    weekPlan ? weekPlan.weekStart : null
+  );
 
-  // Sync days when weekPlan prop loads asynchronously
+  // Sync days when weekPlan prop loads asynchronously (initial load only per week).
+  // We do NOT re-sync on every save — that would overwrite in-progress user edits.
   useEffect(() => {
-    if (weekPlan?.days) {
-      setDays(weekPlan.days);
-      // setCurrentPlanId(weekPlan.id);
-      setCurrentWeekStart(parseLocalDate(weekPlan.weekStart));
-      stablePlanIdRef.current = weekPlan.id;
-    }
+    if (!weekPlan?.days) return;
+    if (initializedWeekRef.current === weekPlan.weekStart) return;
+    initializedWeekRef.current = weekPlan.weekStart;
+    setDays(weekPlan.days);
+    setCurrentWeekStart(parseLocalDate(weekPlan.weekStart));
+    stablePlanIdRef.current = weekPlan.id;
   }, [weekPlan]);
 
   const mainRecipes = useMemo(
@@ -332,15 +338,19 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
     setCurrentWeekStart(newWeekStart);
     setSwapDay(null);
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    // Allow the effect to re-initialize days for the new week
+    initializedWeekRef.current = null;
     if (onLoadWeekPlan) {
       const plan = await onLoadWeekPlan(formatDate(newWeekStart));
       setDays(plan?.days || emptyDays);
       // setCurrentPlanId(plan?.id || null);
       stablePlanIdRef.current = plan?.id || null;
+      initializedWeekRef.current = plan?.weekStart || formatDate(newWeekStart);
     } else {
       setDays(emptyDays);
       // setCurrentPlanId(null);
       stablePlanIdRef.current = null;
+      initializedWeekRef.current = formatDate(newWeekStart);
     }
   };
 
