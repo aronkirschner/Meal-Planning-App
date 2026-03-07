@@ -1111,6 +1111,7 @@
 }
 
 .day-header {
+  position: relative;
   text-align: center;
   margin-bottom: 1rem;
   padding-bottom: 0.75rem;
@@ -1284,7 +1285,57 @@
 }
 
 .planner-actions {
-  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.auto-save-indicator {
+  font-size: 0.85rem;
+  color: #16a34a;
+  font-weight: 500;
+}
+
+/* Day swap */
+.swap-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 0.7rem;
+  padding: 0.15rem 0.35rem;
+  cursor: pointer;
+  color: var(--text-secondary);
+  line-height: 1;
+}
+
+.swap-btn:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.swap-btn-active {
+  background: #fef9c3;
+  border-color: #ca8a04;
+  color: #92400e;
+}
+
+.swap-btn-active:hover {
+  background: #fef08a;
+  color: #92400e;
+}
+
+.day-column-swap-selected {
+  outline: 2px solid #ca8a04;
+  outline-offset: 2px;
+}
+
+.day-column-swap-target {
+  outline: 2px dashed var(--primary);
+  outline-offset: 2px;
 }
 
 /* Planner edit/view mode toggle */

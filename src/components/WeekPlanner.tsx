@@ -234,18 +234,22 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
   const [days, setDays] = useState<WeekPlan['days']>(
     weekPlan?.days || emptyDays
   );
-  const [currentPlanId, setCurrentPlanId] = useState<string | null>(
-    weekPlan?.id || null
-  );
   const [viewMode, setViewMode] = useState<'edit' | 'view'>('edit');
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
+  const [swapDay, setSwapDay] = useState<DayOfWeek | null>(null);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saved'>('idle');
+
+  // Stable ref for plan ID so auto-save always uses the same ID within a week
+  const stablePlanIdRef = useRef<string | null>(weekPlan?.id || null);
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Sync days when weekPlan prop loads asynchronously
   useEffect(() => {
     if (weekPlan?.days) {
       setDays(weekPlan.days);
-      setCurrentPlanId(weekPlan.id);
+      // setCurrentPlanId(weekPlan.id);
       setCurrentWeekStart(parseLocalDate(weekPlan.weekStart));
+      stablePlanIdRef.current = weekPlan.id;
     }
   }, [weekPlan]);
 
@@ -266,39 +270,77 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
     [recipes]
   );
 
+  const triggerAutoSave = (newDays: WeekPlan['days']) => {
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => {
+      if (!stablePlanIdRef.current) stablePlanIdRef.current = generateId();
+      const plan: WeekPlan = {
+        id: stablePlanIdRef.current,
+        weekStart: formatDate(currentWeekStart),
+        days: newDays,
+      };
+      // setCurrentPlanId(plan.id);
+      onSave(plan);
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 2000);
+    }, 600);
+  };
+
   const handleMealChange = (
     day: DayOfWeek,
     mealType: keyof DayMeal,
     value: string
   ) => {
-    setDays((prev) => ({
-      ...prev,
-      [day]: {
-        ...prev[day],
-        [mealType]: value,
-      },
-    }));
+    const newDays = {
+      ...days,
+      [day]: { ...days[day], [mealType]: value },
+    };
+    setDays(newDays);
+    triggerAutoSave(newDays);
+  };
+
+  const handleSwapClick = (day: DayOfWeek) => {
+    if (!swapDay) {
+      setSwapDay(day);
+      return;
+    }
+    if (swapDay === day) {
+      setSwapDay(null);
+      return;
+    }
+    const newDays = { ...days, [day]: days[swapDay], [swapDay]: days[day] };
+    setDays(newDays);
+    setSwapDay(null);
+    triggerAutoSave(newDays);
   };
 
   const handleSave = () => {
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    if (!stablePlanIdRef.current) stablePlanIdRef.current = generateId();
     const plan: WeekPlan = {
-      id: currentPlanId || generateId(),
+      id: stablePlanIdRef.current,
       weekStart: formatDate(currentWeekStart),
       days,
     };
-    setCurrentPlanId(plan.id);
+    // setCurrentPlanId(plan.id);
     onSave(plan);
+    setSaveStatus('saved');
+    setTimeout(() => setSaveStatus('idle'), 2000);
   };
 
   const navigateToWeek = async (newWeekStart: Date) => {
     setCurrentWeekStart(newWeekStart);
+    setSwapDay(null);
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     if (onLoadWeekPlan) {
       const plan = await onLoadWeekPlan(formatDate(newWeekStart));
       setDays(plan?.days || emptyDays);
-      setCurrentPlanId(plan?.id || null);
+      // setCurrentPlanId(plan?.id || null);
+      stablePlanIdRef.current = plan?.id || null;
     } else {
       setDays(emptyDays);
-      setCurrentPlanId(null);
+      // setCurrentPlanId(null);
+      stablePlanIdRef.current = null;
     }
   };
 
@@ -433,10 +475,21 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
             {DAYS_OF_WEEK.map((day, index) => {
               const dayDate = addDays(currentWeekStart, index);
               return (
-                <div key={day} className="day-column">
+                <div
+                  key={day}
+                  className={`day-column${swapDay === day ? ' day-column-swap-selected' : ''}${swapDay && swapDay !== day ? ' day-column-swap-target' : ''}`}
+                >
                   <div className="day-header">
                     <strong>{DAY_LABELS[day]}</strong>
                     <span className="day-date">{formatDisplayDate(dayDate)}</span>
+                    <button
+                      type="button"
+                      className={`swap-btn${swapDay === day ? ' swap-btn-active' : ''}`}
+                      onClick={() => handleSwapClick(day)}
+                      title={swapDay === day ? 'Cancel swap' : swapDay ? `Swap with ${DAY_LABELS[swapDay]}` : 'Swap this day with another'}
+                    >
+                      {swapDay === day ? 'Cancel' : '⇄'}
+                    </button>
                   </div>
 
                   <MealSelector
@@ -485,6 +538,9 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
             <button onClick={handleSave} className="btn-primary">
               Save Week Plan
             </button>
+            {saveStatus === 'saved' && (
+              <span className="auto-save-indicator">Saved ✓</span>
+            )}
           </div>
         </>
       )}
