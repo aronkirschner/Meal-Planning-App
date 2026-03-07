@@ -62,9 +62,10 @@ const SLOT_LABELS: Record<keyof DayMeal, string> = {
   other: 'Other',
 };
 
-function getSunday(date: Date): Date {
+function getSaturday(date: Date): Date {
   const d = new Date(date);
-  d.setDate(d.getDate() - d.getDay());
+  const offset = (d.getDay() + 1) % 7;
+  d.setDate(d.getDate() - offset);
   d.setHours(0, 0, 0, 0);
   return d;
 }
@@ -86,7 +87,7 @@ function AddToWeekPicker({ recipe, onAdd, onClose }: {
   const [slot, setSlot] = useState<keyof DayMeal>(recipe.category);
   const ref = useRef<HTMLDivElement>(null);
 
-  const thisSunday = getSunday(new Date());
+  const thisSunday = getSaturday(new Date());
   const selectedSunday = useMemo(() => {
     const d = new Date(thisSunday);
     d.setDate(d.getDate() + weekOffset * 7);

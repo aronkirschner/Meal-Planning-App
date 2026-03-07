@@ -194,13 +194,13 @@ export interface WeekPlan {
 export type DayOfWeek = keyof WeekPlan['days'];
 
 export const DAYS_OF_WEEK: DayOfWeek[] = [
+  'saturday',
   'sunday',
   'monday',
   'tuesday',
   'wednesday',
   'thursday',
   'friday',
-  'saturday',
 ];
 
 // User and Family types for multi-family support

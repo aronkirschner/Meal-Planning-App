@@ -15,10 +15,10 @@ interface AggregatedIngredient {
 
 const CUSTOM_PREFIX = 'custom:';
 
-function getSunday(date: Date): Date {
+function getSaturday(date: Date): Date {
   const d = new Date(date);
-  const day = d.getDay();
-  d.setDate(d.getDate() - day);
+  const offset = (d.getDay() + 1) % 7;
+  d.setDate(d.getDate() - offset);
   d.setHours(0, 0, 0, 0);
   return d;
 }
@@ -42,12 +42,12 @@ function formatDisplayDate(date: Date): string {
 
 export function ShoppingList({ recipes, weekPlan, onLoadWeekPlan }: ShoppingListProps) {
   const [copied, setCopied] = useState(false);
-  const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => getSunday(new Date()));
+  const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => getSaturday(new Date()));
   const [displayedPlan, setDisplayedPlan] = useState<WeekPlan | null>(weekPlan);
   const [loadingWeek, setLoadingWeek] = useState(false);
 
   // Keep displayedPlan in sync when weekPlan prop changes (initial load)
-  const currentWeekString = formatDate(getSunday(new Date()));
+  const currentWeekString = formatDate(getSaturday(new Date()));
   if (weekPlan && !displayedPlan && formatDate(currentWeekStart) === currentWeekString) {
     setDisplayedPlan(weekPlan);
   }
@@ -80,7 +80,7 @@ export function ShoppingList({ recipes, weekPlan, onLoadWeekPlan }: ShoppingList
 
   const handlePrevWeek = () => navigateToWeek(addDays(currentWeekStart, -7));
   const handleNextWeek = () => navigateToWeek(addDays(currentWeekStart, 7));
-  const handleCurrentWeek = () => navigateToWeek(getSunday(new Date()));
+  const handleCurrentWeek = () => navigateToWeek(getSaturday(new Date()));
 
   const activePlan = displayedPlan;
 

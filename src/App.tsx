@@ -28,10 +28,10 @@ import './App.css';
 
 type Tab = 'recipes' | 'planner' | 'shopping' | 'community' | 'analytics';
 
-function getSunday(date: Date): Date {
+function getSaturday(date: Date): Date {
   const d = new Date(date);
-  const day = d.getDay();
-  d.setDate(d.getDate() - day);
+  const offset = (d.getDay() + 1) % 7;
+  d.setDate(d.getDate() - offset);
   d.setHours(0, 0, 0, 0);
   return d;
 }
@@ -81,7 +81,7 @@ function MealPlannerApp() {
       // Fetch week plans
       const fetchedPlans = await getWeekPlans(family.id);
       setAllWeekPlans(fetchedPlans);
-      const weekStart = formatDate(getSunday(new Date()));
+      const weekStart = formatDate(getSaturday(new Date()));
       // Use getWeekPlan which deduplicates if multiple docs exist for the same week
       const plan = await getWeekPlan(family.id, weekStart);
       if (plan) {

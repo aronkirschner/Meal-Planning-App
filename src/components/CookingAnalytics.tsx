@@ -48,8 +48,8 @@ const DAY_LABELS: Record<DayOfWeek, string> = {
 };
 
 const DAY_OFFSETS: Record<DayOfWeek, number> = {
-  sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
-  thursday: 4, friday: 5, saturday: 6,
+  saturday: 0, sunday: 1, monday: 2, tuesday: 3,
+  wednesday: 4, thursday: 5, friday: 6,
 };
 
 function getWeeksAgoDate(weeks: number): string {

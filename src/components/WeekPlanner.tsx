@@ -13,10 +13,10 @@ interface WeekPlannerProps {
   lastCookedDates?: Map<string, string>;
 }
 
-function getSunday(date: Date): Date {
+function getSaturday(date: Date): Date {
   const d = new Date(date);
-  const day = d.getDay();
-  d.setDate(d.getDate() - day);
+  const offset = (d.getDay() + 1) % 7;
+  d.setDate(d.getDate() - offset);
   d.setHours(0, 0, 0, 0);
   return d;
 }
@@ -218,7 +218,7 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
     if (weekPlan) {
       return parseLocalDate(weekPlan.weekStart);
     }
-    return getSunday(new Date());
+    return getSaturday(new Date());
   });
 
   const emptyDays: WeekPlan['days'] = {
@@ -353,7 +353,7 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
   };
 
   const handleCurrentWeek = () => {
-    navigateToWeek(getSunday(new Date()));
+    navigateToWeek(getSaturday(new Date()));
   };
 
   const handleAIPlanGenerated = (plan: Record<DayOfWeek, DayMeal>) => {
