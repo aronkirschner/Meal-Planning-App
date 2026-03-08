@@ -237,9 +237,22 @@ export async function getWeekPlans(familyId: string): Promise<WeekPlan[]> {
   return snapshot.docs.map((doc) => doc.data() as WeekPlan);
 }
 
+// When the week start day changed from Sunday to Saturday, existing plans were
+// stored under the Sunday key. Accept either Saturday or its following Sunday
+// so old plans remain visible without a data migration.
+function altWeekStart(weekStart: string): string {
+  const [y, m, d] = weekStart.split('-').map(Number);
+  const date = new Date(y, m - 1, d + 1);
+  const yy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  return `${yy}-${mm}-${dd}`;
+}
+
 export async function getWeekPlan(familyId: string, weekStart: string): Promise<WeekPlan | undefined> {
   const plans = await getWeekPlans(familyId);
-  const matches = plans.filter((p) => p.weekStart === weekStart);
+  const alt = altWeekStart(weekStart);
+  const matches = plans.filter((p) => p.weekStart === weekStart || p.weekStart === alt);
   if (matches.length === 0) return undefined;
   if (matches.length === 1) return matches[0];
   // Multiple documents for same week — return the one with the most meals
