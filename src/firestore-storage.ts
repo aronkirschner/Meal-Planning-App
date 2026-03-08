@@ -254,22 +254,23 @@ export async function getWeekPlan(familyId: string, weekStart: string): Promise<
   const alt = altWeekStart(weekStart);
   const matches = plans.filter((p) => p.weekStart === weekStart || p.weekStart === alt);
   if (matches.length === 0) return undefined;
-  if (matches.length === 1) return matches[0];
-  // Multiple documents for same week — return the one with the most meals
-  return matches.reduce((best, plan) => {
-    const count = (p: WeekPlan) => {
-      let n = 0;
-      for (const day of Object.values(p.days)) {
-        const m = day as Record<string, string | undefined>;
-        if (m.main) n++;
-        if (m.vegetable) n++;
-        if (m.grain) n++;
-        if (m.other) n++;
-      }
-      return n;
-    };
-    return count(plan) > count(best) ? plan : best;
-  });
+  const count = (p: WeekPlan) => {
+    let n = 0;
+    for (const day of Object.values(p.days)) {
+      const m = day as Record<string, string | undefined>;
+      if (m.main) n++;
+      if (m.vegetable) n++;
+      if (m.grain) n++;
+      if (m.other) n++;
+    }
+    return n;
+  };
+  const best = matches.length === 1
+    ? matches[0]
+    : matches.reduce((a, b) => count(b) > count(a) ? b : a);
+  // Always return the canonical Saturday weekStart so the app sees a consistent
+  // key regardless of whether the stored plan used Sunday (old data) or Saturday.
+  return best.weekStart === weekStart ? best : { ...best, weekStart };
 }
 
 export async function saveWeekPlan(familyId: string, plan: WeekPlan): Promise<void> {
