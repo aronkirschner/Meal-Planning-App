@@ -1,5 +1,9 @@
-const API_KEY = 'e3e2e44262e949b5b44ec5443fc3e25f';
+const API_KEY = import.meta.env.VITE_SPOONACULAR_API_KEY as string;
 const BASE_URL = 'https://api.spoonacular.com';
+
+if (!API_KEY) {
+  console.error('VITE_SPOONACULAR_API_KEY is not set. Recipe URL extraction will not work.');
+}
 
 export interface ExtractedRecipe {
   title: string;
