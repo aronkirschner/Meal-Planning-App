@@ -391,16 +391,45 @@ export function RecipeForm({ onSave, editRecipe, onCancel }: RecipeFormProps) {
             </div>
           )}
 
-          {entryMode === 'url' || editRecipe ? (
+          {editRecipe || entryMode === 'url' ? (
             <div className="form-group">
-              <label>Ingredients ({ingredients.length} found)</label>
-              <ul className="extracted-ingredients">
-                {ingredients.map((ing, index) => (
-                  <li key={index}>
-                    {ing.amount} {ing.unit} {ing.name}
-                  </li>
-                ))}
-              </ul>
+              <label>Ingredients</label>
+              {ingredients.map((ing, index) => (
+                <div key={index} className="ingredient-row">
+                  <input
+                    type="text"
+                    value={ing.amount}
+                    onChange={(e) => setIngredients(ingredients.map((x, i) => i === index ? { ...x, amount: e.target.value } : x))}
+                    placeholder="Amt"
+                    className="ingredient-amount"
+                  />
+                  <input
+                    type="text"
+                    value={ing.unit}
+                    onChange={(e) => setIngredients(ingredients.map((x, i) => i === index ? { ...x, unit: e.target.value } : x))}
+                    placeholder="Unit"
+                    className="ingredient-unit"
+                  />
+                  <input
+                    type="text"
+                    value={ing.name}
+                    onChange={(e) => setIngredients(ingredients.map((x, i) => i === index ? { ...x, name: e.target.value } : x))}
+                    placeholder="Ingredient name"
+                    className="ingredient-name"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setIngredients(ingredients.filter((_, i) => i !== index))}
+                    className="btn-remove-item"
+                    title="Remove ingredient"
+                  >&times;</button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => setIngredients([...ingredients, { amount: '', unit: '', name: '' }])}
+                className="btn-add-item"
+              >+ Add Ingredient</button>
             </div>
           ) : (
             <div className="form-group">
@@ -415,17 +444,33 @@ export function RecipeForm({ onSave, editRecipe, onCancel }: RecipeFormProps) {
             </div>
           )}
 
-          {entryMode === 'url' || editRecipe ? (
-            directions.length > 0 && (
-              <div className="form-group">
-                <label>Directions ({directions.length} steps)</label>
-                <ol className="extracted-directions">
-                  {directions.map((step, index) => (
-                    <li key={index}>{step}</li>
-                  ))}
-                </ol>
-              </div>
-            )
+          {editRecipe || entryMode === 'url' ? (
+            <div className="form-group">
+              <label>Directions</label>
+              {directions.map((step, index) => (
+                <div key={index} className="direction-row">
+                  <span className="direction-number">{index + 1}.</span>
+                  <textarea
+                    value={step}
+                    onChange={(e) => setDirections(directions.map((s, i) => i === index ? e.target.value : s))}
+                    placeholder="Step description..."
+                    rows={2}
+                    className="direction-input"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setDirections(directions.filter((_, i) => i !== index))}
+                    className="btn-remove-item"
+                    title="Remove step"
+                  >&times;</button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => setDirections([...directions, ''])}
+                className="btn-add-item"
+              >+ Add Step</button>
+            </div>
           ) : (
             <div className="form-group">
               <label htmlFor="manualDirections">Directions (one step per line)</label>
