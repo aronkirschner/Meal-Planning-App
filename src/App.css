@@ -791,29 +791,26 @@
   margin-bottom: 0.4rem;
 }
 
-.ingredient-amount {
+.ingredient-row .ingredient-amount {
   width: 4rem;
-  flex-shrink: 0;
+  flex: 0 0 4rem;
 }
 
-.ingredient-unit {
-  width: 5rem;
-  flex-shrink: 0;
+.ingredient-row .ingredient-unit {
+  width: 6rem;
+  flex: 0 0 6rem;
 }
 
-.ingredient-name {
+.ingredient-row .ingredient-name {
   flex: 1;
+  min-width: 0;
 }
 
-.ingredient-amount,
-.ingredient-unit,
-.ingredient-name {
+.ingredient-row .ingredient-amount,
+.ingredient-row .ingredient-unit,
+.ingredient-row .ingredient-name {
   padding: 0.35rem 0.5rem;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
   font-size: 0.9rem;
-  background: var(--bg-primary);
-  color: var(--text-primary);
 }
 
 .direction-row {
