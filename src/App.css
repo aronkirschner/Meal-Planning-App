@@ -1117,6 +1117,11 @@
   max-width: 800px;
 }
 
+.recipe-card.editing {
+  grid-column: 1 / -1;
+  max-width: 800px;
+}
+
 .recipe-section {
   margin-bottom: 1rem;
 }
