@@ -53,6 +53,16 @@ const DAY_LABELS: Record<DayOfWeek, string> = {
   saturday: 'Saturday',
 };
 
+const DAY_SHORT: Record<DayOfWeek, string> = {
+  sunday: 'Su',
+  monday: 'Mo',
+  tuesday: 'Tu',
+  wednesday: 'We',
+  thursday: 'Th',
+  friday: 'Fr',
+  saturday: 'Sa',
+};
+
 const CUSTOM_PREFIX = 'custom:';
 
 interface MealSelectorProps {
@@ -213,6 +223,10 @@ function MealSelector({ label, value, recipes, onChange }: MealSelectorProps) {
   );
 }
 
+function hasMeals(day: DayMeal): boolean {
+  return !!(day.main || day.vegetable || day.grain || day.other);
+}
+
 export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCounts, lastCookedDates }: WeekPlannerProps) {
   const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => {
     if (weekPlan) {
@@ -237,6 +251,15 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(
     weekPlan?.id || null
   );
+  const [isDirty, setIsDirty] = useState(false);
+  const [showSavedToast, setShowSavedToast] = useState(false);
+  const [aiExpanded, setAiExpanded] = useState(false);
+  const [activeDayIndex, setActiveDayIndex] = useState<number>(() => {
+    const todayIndex = new Date().getDay(); // 0=Sun..6=Sat, matches DAYS_OF_WEEK
+    return todayIndex;
+  });
+
+  const todayStr = formatDate(new Date());
 
   // Sync days when weekPlan prop loads asynchronously
   useEffect(() => {
@@ -244,6 +267,7 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
       setDays(weekPlan.days);
       setCurrentPlanId(weekPlan.id);
       setCurrentWeekStart(parseLocalDate(weekPlan.weekStart));
+      setIsDirty(false);
     }
   }, [weekPlan]);
 
@@ -276,6 +300,7 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
         [mealType]: value,
       },
     }));
+    setIsDirty(true);
   };
 
   const handleSave = () => {
@@ -286,10 +311,18 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
     };
     setCurrentPlanId(plan.id);
     onSave(plan);
+    setIsDirty(false);
+    setShowSavedToast(true);
+    setTimeout(() => setShowSavedToast(false), 2500);
   };
 
   const navigateToWeek = async (newWeekStart: Date) => {
     setCurrentWeekStart(newWeekStart);
+    setIsDirty(false);
+    // Default active day to today if navigating to current week, else Sunday
+    const currentSunday = formatDate(getSunday(new Date()));
+    const newSunday = formatDate(newWeekStart);
+    setActiveDayIndex(newSunday === currentSunday ? new Date().getDay() : 0);
     if (onLoadWeekPlan) {
       const plan = await onLoadWeekPlan(formatDate(newWeekStart));
       setDays(plan?.days || emptyDays);
@@ -312,9 +345,17 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
     navigateToWeek(getSunday(new Date()));
   };
 
+  const handleClearWeek = () => {
+    if (window.confirm('Clear all meals for this week?')) {
+      setDays({ ...emptyDays });
+      setIsDirty(true);
+    }
+  };
+
   const handleAIPlanGenerated = (plan: Record<DayOfWeek, DayMeal>) => {
-    // Merge AI-generated plan with current days
     setDays(plan);
+    setIsDirty(true);
+    setAiExpanded(false);
   };
 
   const weekEnd = addDays(currentWeekStart, 6);
@@ -323,36 +364,89 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
     <div className="week-planner">
       <div className="week-navigation">
         <button onClick={handlePreviousWeek} className="btn-secondary">
-          Previous Week
+          &#8592; Prev
         </button>
         <div className="week-display">
           <h3>
-            {formatDisplayDate(currentWeekStart)} -{' '}
+            {formatDisplayDate(currentWeekStart)} &ndash;{' '}
             {formatDisplayDate(weekEnd)}
           </h3>
-          <button onClick={handleCurrentWeek} className="btn-link">
-            Go to Current Week
-          </button>
+          <div className="week-display-links">
+            <button onClick={handleCurrentWeek} className="btn-link">
+              Current Week
+            </button>
+            <span className="week-display-sep">&middot;</span>
+            <button onClick={handleClearWeek} className="btn-link btn-link-danger">
+              Clear Week
+            </button>
+          </div>
         </div>
         <button onClick={handleNextWeek} className="btn-secondary">
-          Next Week
+          Next &#8594;
         </button>
       </div>
 
       <div className="ai-planner-section">
-        <AIPlannerInput
-          recipes={recipes}
-          cookCounts={cookCounts}
-          lastCookedDates={lastCookedDates}
-          onPlanGenerated={handleAIPlanGenerated}
-        />
+        <button
+          className="ai-toggle-btn"
+          onClick={() => setAiExpanded(!aiExpanded)}
+        >
+          ✨ {aiExpanded ? 'Hide AI Planner' : 'Generate AI Plan'}
+        </button>
+        <div className={`ai-planner-content${aiExpanded ? ' ai-expanded' : ''}`}>
+          <AIPlannerInput
+            recipes={recipes}
+            cookCounts={cookCounts}
+            lastCookedDates={lastCookedDates}
+            onPlanGenerated={handleAIPlanGenerated}
+          />
+        </div>
+      </div>
+
+      {/* Mobile day-by-day navigation */}
+      <div className="mobile-day-nav">
+        <button
+          className="btn-day-arrow"
+          onClick={() => setActiveDayIndex((i) => Math.max(0, i - 1))}
+          disabled={activeDayIndex === 0}
+        >
+          &#8249;
+        </button>
+        <div className="day-dots">
+          {DAYS_OF_WEEK.map((day, i) => {
+            const dayDate = addDays(currentWeekStart, i);
+            const isToday = formatDate(dayDate) === todayStr;
+            return (
+              <button
+                key={day}
+                className={`day-dot${i === activeDayIndex ? ' dot-active' : ''}${hasMeals(days[day]) ? ' dot-has-meals' : ''}${isToday ? ' dot-today' : ''}`}
+                onClick={() => setActiveDayIndex(i)}
+                title={DAY_LABELS[day]}
+              >
+                {DAY_SHORT[day]}
+              </button>
+            );
+          })}
+        </div>
+        <button
+          className="btn-day-arrow"
+          onClick={() => setActiveDayIndex((i) => Math.min(6, i + 1))}
+          disabled={activeDayIndex === 6}
+        >
+          &#8250;
+        </button>
       </div>
 
       <div className="week-grid">
         {DAYS_OF_WEEK.map((day, index) => {
           const dayDate = addDays(currentWeekStart, index);
+          const isToday = formatDate(dayDate) === todayStr;
+          const isActive = index === activeDayIndex;
           return (
-            <div key={day} className="day-column">
+            <div
+              key={day}
+              className={`day-column${isToday ? ' day-today' : ''}${isActive ? ' day-active' : ''}`}
+            >
               <div className="day-header">
                 <strong>{DAY_LABELS[day]}</strong>
                 <span className="day-date">{formatDisplayDate(dayDate)}</span>
@@ -391,20 +485,17 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
       </div>
 
       <div className="planner-actions">
-        <button
-          onClick={() => {
-            if (window.confirm('Clear all meals for this week?')) {
-              setDays({ ...emptyDays });
-            }
-          }}
-          className="btn-secondary"
-        >
-          Clear Week
-        </button>
+        {isDirty && <span className="unsaved-badge">Unsaved changes</span>}
         <button onClick={handleSave} className="btn-primary">
           Save Week Plan
         </button>
       </div>
+
+      {showSavedToast && (
+        <div className="saved-toast" role="status">
+          Saved ✓
+        </div>
+      )}
     </div>
   );
 }

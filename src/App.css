@@ -591,13 +591,22 @@
 }
 
 .nav-btn {
-  padding: 0.75rem 1.5rem;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.75rem 1.25rem;
   border: 2px solid var(--border-color);
   background: var(--bg-secondary);
   cursor: pointer;
   font-size: 1rem;
   border-radius: 8px;
   transition: all 0.2s;
+}
+
+.nav-icon {
+  font-size: 1.1rem;
+  line-height: 1;
 }
 
 .nav-btn:hover {
@@ -1075,7 +1084,7 @@
   align-items: center;
   margin-bottom: 1.5rem;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .week-display {
@@ -1084,6 +1093,22 @@
 
 .week-display h3 {
   margin: 0 0 0.25rem;
+}
+
+.week-display-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.week-display-sep {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.btn-link-danger {
+  color: #c0392b;
 }
 
 .btn-link {
@@ -1108,6 +1133,23 @@
   border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 1rem;
+}
+
+.day-today {
+  border-color: var(--primary-color);
+  border-width: 2px;
+}
+
+.day-today .day-header {
+  background: var(--primary-color);
+  color: white;
+  margin: -1rem -1rem 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 10px 10px 0 0;
+}
+
+.day-today .day-header .day-date {
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .day-header {
@@ -1156,7 +1198,8 @@
 
 .searchable-select-trigger {
   width: 100%;
-  padding: 0.5rem;
+  padding: 0.625rem 0.75rem;
+  min-height: 44px;
   border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 0.9rem;
@@ -1177,6 +1220,12 @@
   color: var(--text-secondary);
 }
 
+.select-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .select-arrow {
   font-size: 0.6rem;
   color: var(--text-secondary);
@@ -1189,6 +1238,7 @@
   top: 100%;
   left: 0;
   right: 0;
+  min-width: 220px;
   z-index: 100;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
@@ -1222,7 +1272,8 @@
 .searchable-select-option {
   display: block;
   width: 100%;
-  padding: 0.4rem 0.5rem;
+  padding: 0.6rem 0.75rem;
+  min-height: 44px;
   border: none;
   background: none;
   color: var(--text-primary);
@@ -1273,10 +1324,15 @@
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 6px;
-  padding: 0.25rem 0.5rem;
+  padding: 0.375rem 0.5rem;
+  min-width: 36px;
+  min-height: 36px;
   cursor: pointer;
   font-size: 1rem;
   color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-cancel-custom:hover {
@@ -1284,7 +1340,38 @@
 }
 
 .planner-actions {
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  position: sticky;
+  bottom: 0;
+  background: var(--bg-primary);
+  padding: 0.875rem 1rem;
+  border-top: 1px solid var(--border-color);
+  z-index: 50;
+  margin: 0 -1rem;
+}
+
+.unsaved-badge {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.saved-toast {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #2d6a4f;
+  color: white;
+  padding: 0.5rem 1.5rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  z-index: 400;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 /* Shopping List */
@@ -2160,6 +2247,20 @@
   gap: 0.75rem;
 }
 
+/* AI Planner toggle (mobile collapse) */
+.ai-toggle-btn {
+  display: none;
+}
+
+.ai-planner-content {
+  /* always visible on desktop */
+}
+
+/* Mobile day-by-day navigation */
+.mobile-day-nav {
+  display: none;
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
   .week-grid {
@@ -2168,8 +2269,177 @@
 }
 
 @media (max-width: 768px) {
+  /* Bottom navigation bar */
+  .app-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+    justify-content: space-around;
+    padding: 0.375rem 0 calc(0.375rem + env(safe-area-inset-bottom));
+    margin-bottom: 0;
+    z-index: 200;
+    gap: 0;
+    flex-wrap: nowrap;
+  }
+
+  .app-content {
+    padding-bottom: 72px;
+  }
+
+  .nav-btn {
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0.3rem 0.25rem;
+    font-size: 0.65rem;
+    border: none;
+    border-radius: 0;
+    background: none;
+    gap: 0.15rem;
+    min-height: 52px;
+  }
+
+  .nav-btn.active {
+    border: none;
+    background: none;
+    color: var(--primary-color);
+  }
+
+  .nav-icon {
+    font-size: 1.3rem;
+  }
+
+  /* Planner actions sticky above bottom nav */
+  .planner-actions {
+    bottom: 52px;
+  }
+
+  /* Saved toast above bottom nav */
+  .saved-toast {
+    bottom: 80px;
+  }
+
+  /* Week navigation compact labels */
+  .week-navigation .btn-secondary {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9rem;
+  }
+
+  /* AI Planner collapsible */
+  .ai-toggle-btn {
+    display: block;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: var(--bg-secondary);
+    border: 1px dashed var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    color: var(--primary-color);
+    margin-bottom: 0.75rem;
+    text-align: center;
+  }
+
+  .ai-planner-content {
+    display: none;
+  }
+
+  .ai-planner-content.ai-expanded {
+    display: block;
+  }
+
+  /* Day-by-day navigation */
+  .mobile-day-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .btn-day-arrow {
+    background: none;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--primary-color);
+    font-size: 1.75rem;
+    line-height: 1;
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .btn-day-arrow:disabled {
+    color: var(--border-color);
+    cursor: default;
+  }
+
+  .day-dots {
+    display: flex;
+    gap: 0.3rem;
+    flex: 1;
+    justify-content: center;
+  }
+
+  .day-dot {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 2px solid var(--border-color);
+    background: var(--bg-secondary);
+    cursor: pointer;
+    font-size: 0.6rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: all 0.15s;
+  }
+
+  .day-dot.dot-has-meals {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+  }
+
+  .day-dot.dot-today {
+    background: rgba(74, 144, 164, 0.15);
+  }
+
+  .day-dot.dot-active {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+  }
+
+  /* Week grid: hide all but active day */
   .week-grid {
-    grid-template-columns: repeat(2, minmax(150px, 1fr));
+    grid-template-columns: 1fr;
+  }
+
+  .week-grid .day-column {
+    display: none;
+  }
+
+  .week-grid .day-column.day-active {
+    display: block;
+  }
+
+  /* Compact header */
+  .app-header {
+    padding: 0.75rem 0;
+  }
+
+  .invite-toggle {
+    display: none;
   }
 
   .ingredient-row {
@@ -2187,16 +2457,7 @@
 }
 
 @media (max-width: 480px) {
-  .week-grid {
-    grid-template-columns: 1fr;
-  }
-
   .app-header h1 {
     font-size: 1.5rem;
-  }
-
-  .nav-btn {
-    padding: 0.5rem 1rem;
-    font-size: 0.9rem;
   }
 }

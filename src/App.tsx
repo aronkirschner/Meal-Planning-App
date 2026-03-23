@@ -330,31 +330,36 @@ function MealPlannerApp() {
           className={`nav-btn ${activeTab === 'planner' ? 'active' : ''}`}
           onClick={() => setActiveTab('planner')}
         >
-          Week Planner
+          <span className="nav-icon">📅</span>
+          <span className="nav-label">Planner</span>
         </button>
         <button
           className={`nav-btn ${activeTab === 'recipes' ? 'active' : ''}`}
           onClick={() => setActiveTab('recipes')}
         >
-          Recipes
+          <span className="nav-icon">🍽️</span>
+          <span className="nav-label">Recipes</span>
         </button>
         <button
           className={`nav-btn ${activeTab === 'shopping' ? 'active' : ''}`}
           onClick={() => setActiveTab('shopping')}
         >
-          Shopping List
+          <span className="nav-icon">🛒</span>
+          <span className="nav-label">Shop</span>
         </button>
         <button
           className={`nav-btn ${activeTab === 'analytics' ? 'active' : ''}`}
           onClick={() => setActiveTab('analytics')}
         >
-          Analytics
+          <span className="nav-icon">📊</span>
+          <span className="nav-label">Stats</span>
         </button>
         <button
           className={`nav-btn ${activeTab === 'community' ? 'active' : ''}`}
           onClick={() => setActiveTab('community')}
         >
-          Community
+          <span className="nav-icon">🌐</span>
+          <span className="nav-label">Community</span>
         </button>
       </nav>
 
