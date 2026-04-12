@@ -254,6 +254,7 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
   const [isDirty, setIsDirty] = useState(false);
   const [showSavedToast, setShowSavedToast] = useState(false);
   const [aiExpanded, setAiExpanded] = useState(false);
+  const [recipesExpanded, setRecipesExpanded] = useState(true);
   const [activeDayIndex, setActiveDayIndex] = useState<number>(() => {
     const todayIndex = new Date().getDay(); // 0=Sun..6=Sat, matches DAYS_OF_WEEK
     return todayIndex;
@@ -287,6 +288,22 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
     () => recipes.filter((r) => r.category === 'other'),
     [recipes]
   );
+
+  const weekRecipes = useMemo(() => {
+    const seen = new Set<string>();
+    const result: Recipe[] = [];
+    for (const dayMeal of Object.values(days)) {
+      for (const key of ['main', 'vegetable', 'grain', 'other'] as const) {
+        const val = dayMeal[key as keyof DayMeal];
+        if (val && !val.startsWith(CUSTOM_PREFIX) && !seen.has(val)) {
+          seen.add(val);
+          const recipe = recipes.find((r) => r.id === val);
+          if (recipe) result.push(recipe);
+        }
+      }
+    }
+    return result.sort((a, b) => a.name.localeCompare(b.name));
+  }, [days, recipes]);
 
   const handleMealChange = (
     day: DayOfWeek,
@@ -483,6 +500,38 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
           );
         })}
       </div>
+
+      {weekRecipes.length > 0 && (
+        <div className="week-recipes">
+          <button
+            className="week-recipes-toggle"
+            onClick={() => setRecipesExpanded((v) => !v)}
+          >
+            <span>Recipes this week ({weekRecipes.length})</span>
+            <span className="select-arrow">{recipesExpanded ? '\u25B2' : '\u25BC'}</span>
+          </button>
+          {recipesExpanded && (
+            <ul className="week-recipes-list">
+              {weekRecipes.map((recipe) => (
+                <li key={recipe.id} className="week-recipe-item">
+                  <span className="week-recipe-category">{recipe.category}</span>
+                  <span className="week-recipe-name">{recipe.name}</span>
+                  {recipe.url && (
+                    <a
+                      href={recipe.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="week-recipe-link"
+                    >
+                      View ↗
+                    </a>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       <div className="planner-actions">
         {isDirty && <span className="unsaved-badge">Unsaved changes</span>}
