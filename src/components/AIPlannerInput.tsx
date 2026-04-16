@@ -25,9 +25,16 @@ export function AIPlannerInput({ recipes, cookCounts, lastCookedDates, onPlanGen
   const [success, setSuccess] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
+  const MAX_PROMPT_LENGTH = 1000;
+
   const handleGenerate = async () => {
     if (!prompt.trim()) {
       setError('Please enter a description of your meal plan');
+      return;
+    }
+
+    if (prompt.length > MAX_PROMPT_LENGTH) {
+      setError(`Please keep your description under ${MAX_PROMPT_LENGTH} characters`);
       return;
     }
 
@@ -58,8 +65,10 @@ export function AIPlannerInput({ recipes, cookCounts, lastCookedDates, onPlanGen
       console.log('Response status:', response.status);
 
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error('API error:', errorData);
+        const text = await response.text();
+        let errorData: { error?: string } = {};
+        try { errorData = JSON.parse(text); } catch { /* non-JSON error body (timeout, platform limit, etc.) */ }
+        console.error('API error:', response.status, text);
         throw new Error(errorData.error || 'Failed to generate plan');
       }
 
@@ -188,7 +197,11 @@ export function AIPlannerInput({ recipes, cookCounts, lastCookedDates, onPlanGen
         rows={3}
         disabled={isLoading}
         className="ai-prompt-input"
+        maxLength={MAX_PROMPT_LENGTH}
       />
+      <div className={`ai-char-count ${prompt.length > MAX_PROMPT_LENGTH * 0.9 ? 'ai-char-count--warn' : ''}`}>
+        {prompt.length}/{MAX_PROMPT_LENGTH}
+      </div>
 
       <div className="ai-planner-actions">
         <button

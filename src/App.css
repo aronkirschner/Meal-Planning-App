@@ -1555,6 +1555,18 @@
   border-color: #667eea;
 }
 
+.ai-char-count {
+  font-size: 0.75rem;
+  color: var(--text-muted, #888);
+  text-align: right;
+  margin-top: 0.25rem;
+}
+
+.ai-char-count--warn {
+  color: #e67e22;
+  font-weight: 600;
+}
+
 .ai-planner-actions {
   display: flex;
   gap: 0.75rem;

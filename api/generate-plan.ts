@@ -130,8 +130,10 @@ Rules:
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error('OpenAI API error:', errorData);
+      const text = await response.text();
+      let errorData: unknown = {};
+      try { errorData = JSON.parse(text); } catch { /* non-JSON body */ }
+      console.error('OpenAI API error:', response.status, errorData);
       return res.status(500).json({ error: 'Failed to generate meal plan' });
     }
 
