@@ -29,6 +29,7 @@ export function RecipeForm({ onSave, editRecipe, onCancel }: RecipeFormProps) {
     editRecipe?.directions || []
   );
   const [notes, setNotes] = useState(editRecipe?.notes || '');
+  const [cookTime, setCookTime] = useState<number | ''>(editRecipe?.cookTime ?? '');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isExtracted, setIsExtracted] = useState(!!editRecipe);
@@ -162,6 +163,7 @@ export function RecipeForm({ onSave, editRecipe, onCancel }: RecipeFormProps) {
       ingredients: finalIngredients.filter((i) => i.name.trim() !== ''),
       directions: finalDirections,
       notes: notes.trim() || undefined,
+      cookTime: cookTime !== '' ? cookTime : undefined,
       createdAt: editRecipe?.createdAt || new Date().toISOString(),
     };
 
@@ -177,6 +179,7 @@ export function RecipeForm({ onSave, editRecipe, onCancel }: RecipeFormProps) {
       setManualIngredients('');
       setManualDirections('');
       setNotes('');
+      setCookTime('');
       setIsExtracted(false);
     }
   };
@@ -347,6 +350,19 @@ export function RecipeForm({ onSave, editRecipe, onCancel }: RecipeFormProps) {
               />
             </div>
           )}
+
+          <div className="form-group">
+            <label htmlFor="cookTime">Cook Time (minutes, optional)</label>
+            <input
+              id="cookTime"
+              type="number"
+              min={1}
+              max={600}
+              value={cookTime}
+              onChange={(e) => setCookTime(e.target.value === '' ? '' : Number(e.target.value))}
+              placeholder="e.g. 30"
+            />
+          </div>
 
           <div className="form-group">
             <label htmlFor="notes">Notes (optional)</label>

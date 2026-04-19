@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import type { Recipe, RecipeCategory, CuisineType, DayOfWeek, DayMeal } from '../types';
 import { DAYS_OF_WEEK, CUISINE_TYPES } from '../types';
 import { RecipeForm } from './RecipeForm';
+import { extractRecipeFromUrl } from '../api';
 
 type SortOption = 'az' | 'rating' | 'cooked';
 
@@ -169,6 +170,8 @@ export function RecipeList({ recipes, onUpdate, onDelete, cookCounts, onAddToWee
   const [editingId, setEditingId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [addToWeekId, setAddToWeekId] = useState<string | null>(null);
+  const [backfilling, setBackfilling] = useState(false);
+  const [backfillStatus, setBackfillStatus] = useState<string | null>(null);
   const [filterCategory, setFilterCategory] = useState<RecipeCategory | 'all'>(
     'all'
   );
@@ -219,6 +222,37 @@ export function RecipeList({ recipes, onUpdate, onDelete, cookCounts, onAddToWee
     setEditingId(null);
   };
 
+  const recipesToBackfill = recipes.filter((r) => r.url && r.cookTime === undefined);
+
+  const handleBackfill = async () => {
+    if (recipesToBackfill.length === 0) return;
+    setBackfilling(true);
+    setBackfillStatus(`Fetching cook times for ${recipesToBackfill.length} recipe${recipesToBackfill.length > 1 ? 's' : ''}…`);
+    let updated = 0;
+    let failed = 0;
+    for (const recipe of recipesToBackfill) {
+      try {
+        const data = await extractRecipeFromUrl(recipe.url);
+        if (data.readyInMinutes && data.readyInMinutes > 0) {
+          onUpdate({ ...recipe, cookTime: data.readyInMinutes });
+          updated++;
+        } else {
+          failed++;
+        }
+      } catch {
+        failed++;
+      }
+      setBackfillStatus(
+        `Processing… ${updated + failed} / ${recipesToBackfill.length} done`
+      );
+    }
+    setBackfilling(false);
+    const parts = [];
+    if (updated > 0) parts.push(`${updated} updated`);
+    if (failed > 0) parts.push(`${failed} couldn't be fetched`);
+    setBackfillStatus(parts.join(', '));
+  };
+
   const toggleExpanded = (id: string) => {
     setExpandedId(expandedId === id ? null : id);
   };
@@ -264,6 +298,22 @@ export function RecipeList({ recipes, onUpdate, onDelete, cookCounts, onAddToWee
           <option value="cooked">Sort: Times Cooked</option>
         </select>
       </div>
+
+      {recipesToBackfill.length > 0 && (
+        <div className="backfill-banner">
+          <span>
+            {recipesToBackfill.length} recipe{recipesToBackfill.length > 1 ? 's' : ''} with a URL {recipesToBackfill.length > 1 ? 'have' : 'has'} no cook time set.
+          </span>
+          <button
+            className="btn-secondary btn-sm"
+            onClick={handleBackfill}
+            disabled={backfilling}
+          >
+            {backfilling ? 'Fetching…' : 'Backfill cook times'}
+          </button>
+          {backfillStatus && <span className="backfill-status">{backfillStatus}</span>}
+        </div>
+      )}
 
       {filteredRecipes.length === 0 ? (
         <p className="no-recipes">

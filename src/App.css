@@ -1064,6 +1064,31 @@
   padding: 3rem;
 }
 
+.backfill-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: #92400e;
+}
+
+.backfill-status {
+  font-size: 0.85rem;
+  color: #92400e;
+  font-style: italic;
+}
+
+.btn-sm {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.85rem;
+}
+
 /* Week Planner */
 .week-planner {
   overflow-x: auto;
@@ -1220,7 +1245,9 @@
 }
 
 .searchable-select-option {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   width: 100%;
   padding: 0.4rem 0.5rem;
   border: none;
@@ -1386,6 +1413,36 @@
   font-size: 0.78rem;
   color: var(--text-primary);
   line-height: 1.3;
+}
+
+.week-glance-recipe-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.cook-time-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15em;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #b45309;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 4px;
+  padding: 0.05rem 0.3rem;
+  white-space: nowrap;
+}
+
+.glance-cook-time {
+  font-size: 0.65rem;
+  align-self: flex-start;
+}
+
+.searchable-select-option .cook-time-badge {
+  margin-left: 0.4rem;
+  flex-shrink: 0;
 }
 
 @media (max-width: 1024px) {

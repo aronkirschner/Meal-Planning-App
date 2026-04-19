@@ -35,6 +35,7 @@ export interface Recipe {
   directions: string[];
   notes?: string;
   rating?: number; // 1-5 stars, undefined = unrated
+  cookTime?: number; // total cook time in minutes
   createdAt: string;
 }
 

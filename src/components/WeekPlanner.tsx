@@ -200,6 +200,11 @@ function MealSelector({ label, value, recipes, onChange }: MealSelectorProps) {
                     onClick={() => handleSelect(r.id)}
                   >
                     {r.name}
+                    {r.cookTime && r.cookTime > 45 && (
+                      <span className="cook-time-badge" title={`${r.cookTime} min cook time`}>
+                        ⏱ {r.cookTime}m
+                      </span>
+                    )}
                   </button>
                 ))}
                 {filteredRecipes.length === 0 && search && (
@@ -438,17 +443,24 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
                       return (
                         <li key={m.label} className="week-glance-meal">
                           <span className="week-glance-meal-label">{m.label}</span>
-                          {recipe && onViewRecipe ? (
-                            <button
-                              className="week-glance-recipe-link"
-                              onClick={() => onViewRecipe(recipe.id)}
-                              title={`View ${recipe.name}`}
-                            >
-                              {displayName}
-                            </button>
-                          ) : (
-                            <span className="week-glance-recipe-name">{displayName}</span>
-                          )}
+                          <span className="week-glance-recipe-row">
+                            {recipe && onViewRecipe ? (
+                              <button
+                                className="week-glance-recipe-link"
+                                onClick={() => onViewRecipe(recipe.id)}
+                                title={`View ${recipe.name}`}
+                              >
+                                {displayName}
+                              </button>
+                            ) : (
+                              <span className="week-glance-recipe-name">{displayName}</span>
+                            )}
+                            {recipe && recipe.cookTime && recipe.cookTime > 45 && (
+                              <span className="cook-time-badge glance-cook-time" title={`${recipe.cookTime} min cook time`}>
+                                ⏱ {recipe.cookTime}m
+                              </span>
+                            )}
+                          </span>
                         </li>
                       );
                     })}

@@ -4,6 +4,7 @@ const BASE_URL = 'https://api.spoonacular.com';
 export interface ExtractedRecipe {
   title: string;
   sourceUrl: string;
+  readyInMinutes?: number;
   extendedIngredients: Array<{
     original: string;
     name: string;
