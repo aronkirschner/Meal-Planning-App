@@ -11,6 +11,7 @@ interface WeekPlannerProps {
   onLoadWeekPlan?: (weekStart: string) => Promise<WeekPlan | undefined>;
   cookCounts?: Map<string, number>;
   lastCookedDates?: Map<string, string>;
+  onViewRecipe?: (recipeId: string) => void;
 }
 
 function getSunday(date: Date): Date {
@@ -213,7 +214,7 @@ function MealSelector({ label, value, recipes, onChange }: MealSelectorProps) {
   );
 }
 
-export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCounts, lastCookedDates }: WeekPlannerProps) {
+export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCounts, lastCookedDates, onViewRecipe }: WeekPlannerProps) {
   const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => {
     if (weekPlan) {
       return parseLocalDate(weekPlan.weekStart);
@@ -404,6 +405,59 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
         <button onClick={handleSave} className="btn-primary">
           Save Week Plan
         </button>
+      </div>
+
+      <div className="week-glance">
+        <h3 className="week-glance-title">Week at a Glance</h3>
+        <div className="week-glance-grid">
+          {DAYS_OF_WEEK.map((day, index) => {
+            const dayDate = addDays(currentWeekStart, index);
+            const dayPlan = days[day];
+            const meals: { label: string; value: string }[] = [
+              { label: 'Main', value: dayPlan.main || '' },
+              { label: 'Veg', value: dayPlan.vegetable || '' },
+              { label: 'Grain', value: dayPlan.grain || '' },
+              { label: 'Other', value: dayPlan.other || '' },
+            ].filter((m) => m.value);
+
+            return (
+              <div key={day} className="week-glance-day">
+                <div className="week-glance-day-header">
+                  <span className="week-glance-day-name">{DAY_LABELS[day].slice(0, 3)}</span>
+                  <span className="week-glance-day-date">{formatDisplayDate(dayDate)}</span>
+                </div>
+                {meals.length === 0 ? (
+                  <span className="week-glance-empty">—</span>
+                ) : (
+                  <ul className="week-glance-meals">
+                    {meals.map((m) => {
+                      const isCustom = m.value.startsWith(CUSTOM_PREFIX);
+                      const customText = isCustom ? m.value.slice(CUSTOM_PREFIX.length) : '';
+                      const recipe = !isCustom ? recipes.find((r) => r.id === m.value) : null;
+                      const displayName = recipe ? recipe.name : customText;
+                      return (
+                        <li key={m.label} className="week-glance-meal">
+                          <span className="week-glance-meal-label">{m.label}</span>
+                          {recipe && onViewRecipe ? (
+                            <button
+                              className="week-glance-recipe-link"
+                              onClick={() => onViewRecipe(recipe.id)}
+                              title={`View ${recipe.name}`}
+                            >
+                              {displayName}
+                            </button>
+                          ) : (
+                            <span className="week-glance-recipe-name">{displayName}</span>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

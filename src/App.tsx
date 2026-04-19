@@ -413,6 +413,7 @@ function MealPlannerApp() {
               onLoadWeekPlan={handleLoadWeekPlan}
               cookCounts={recipeCookCounts}
               lastCookedDates={recipeLastCookedDates}
+              onViewRecipe={() => setActiveTab('recipes')}
             />
           </div>
         )}
