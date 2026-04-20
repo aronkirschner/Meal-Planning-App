@@ -222,7 +222,7 @@ export function RecipeList({ recipes, onUpdate, onDelete, cookCounts, onAddToWee
     setEditingId(null);
   };
 
-  const recipesToBackfill = recipes.filter((r) => r.url && r.cookTime === undefined);
+  const recipesToBackfill = recipes.filter((r) => r.url && !r.cookTime);
 
   const handleBackfill = async () => {
     if (recipesToBackfill.length === 0) return;

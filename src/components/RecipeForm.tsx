@@ -91,6 +91,10 @@ export function RecipeForm({ onSave, editRecipe, onCancel }: RecipeFormProps) {
       };
       setCuisineType(inferCuisineType(tempRecipe));
 
+      if (data.readyInMinutes && data.readyInMinutes > 0) {
+        setCookTime(data.readyInMinutes);
+      }
+
       setIsExtracted(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to extract recipe');
