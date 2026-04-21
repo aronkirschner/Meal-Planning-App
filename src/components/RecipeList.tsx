@@ -229,7 +229,8 @@ export function RecipeList({ recipes, onUpdate, onDelete, cookCounts, onAddToWee
     setBackfilling(true);
     setBackfillStatus(`Fetching cook times for ${recipesToBackfill.length} recipe${recipesToBackfill.length > 1 ? 's' : ''}…`);
     let updated = 0;
-    let failed = 0;
+    const needsAI: typeof recipesToBackfill = [];
+
     for (const recipe of recipesToBackfill) {
       try {
         const data = await extractRecipeFromUrl(recipe.url);
@@ -237,20 +238,50 @@ export function RecipeList({ recipes, onUpdate, onDelete, cookCounts, onAddToWee
           onUpdate({ ...recipe, cookTime: data.readyInMinutes });
           updated++;
         } else {
-          failed++;
+          needsAI.push(recipe);
         }
       } catch {
-        failed++;
+        needsAI.push(recipe);
       }
       setBackfillStatus(
-        `Processing… ${updated + failed} / ${recipesToBackfill.length} done`
+        `Processing… ${updated + needsAI.length} / ${recipesToBackfill.length} done`
       );
     }
+
+    if (needsAI.length > 0) {
+      setBackfillStatus(`Estimating ${needsAI.length} cook times with AI…`);
+      try {
+        const response = await fetch('/api/estimate-cook-times', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            recipes: needsAI.map(r => ({
+              id: r.id,
+              name: r.name,
+              ingredients: r.ingredients,
+              directions: r.directions,
+            })),
+          }),
+        });
+        if (response.ok) {
+          const { estimates } = await response.json();
+          for (const est of estimates) {
+            if (est.cookTime > 0) {
+              const recipe = needsAI.find(r => r.id === est.id);
+              if (recipe) {
+                onUpdate({ ...recipe, cookTime: est.cookTime });
+                updated++;
+              }
+            }
+          }
+        }
+      } catch {
+        // AI estimation failed silently
+      }
+    }
+
     setBackfilling(false);
-    const parts = [];
-    if (updated > 0) parts.push(`${updated} updated`);
-    if (failed > 0) parts.push(`${failed} couldn't be fetched`);
-    setBackfillStatus(parts.join(', '));
+    setBackfillStatus(updated > 0 ? `${updated} updated` : 'No cook times found');
   };
 
   const toggleExpanded = (id: string) => {
