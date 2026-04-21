@@ -3,8 +3,8 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 interface RecipeInput {
   id: string;
   name: string;
-  ingredients: Array<{ name: string }>;
-  directions: string[];
+  ingredients: string[];
+  steps: number;
 }
 
 interface CookTimeEstimate {
@@ -27,11 +27,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Missing recipes' });
   }
 
-  const recipeList = recipes.map(r => {
-    const ingredients = r.ingredients.map(i => i.name).join(', ');
-    const steps = r.directions.length;
-    return `id:${r.id} | name:${r.name} | ingredients:${ingredients} | steps:${steps}`;
-  }).join('\n');
+  const recipeList = recipes.map(r =>
+    `id:${r.id} | name:${r.name} | ingredients:${r.ingredients.join(', ')} | steps:${r.steps}`
+  ).join('\n');
 
   const systemPrompt = `You are a cooking expert. Estimate the total cook time (prep + cooking) in minutes for each recipe based on its name, ingredients, and number of steps. Return ONLY a JSON array of objects with "id" and "cookTime" (integer minutes). Be realistic — a simple salad might be 10 min, a roast might be 120 min.`;
 
@@ -51,7 +49,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           { role: 'user', content: userPrompt },
         ],
         temperature: 0.3,
-        max_tokens: 1000,
+        max_tokens: 2000,
       }),
     });
 

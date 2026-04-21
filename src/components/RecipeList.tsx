@@ -227,39 +227,26 @@ export function RecipeList({ recipes, onUpdate, onDelete, cookCounts, onAddToWee
   const handleBackfill = async () => {
     if (recipesToBackfill.length === 0) return;
     setBackfilling(true);
-    setBackfillStatus(`Fetching cook times for ${recipesToBackfill.length} recipe${recipesToBackfill.length > 1 ? 's' : ''}…`);
+    setBackfillStatus(`Estimating ${recipesToBackfill.length} cook times with AI…`);
     let updated = 0;
-    const needsAI: typeof recipesToBackfill = [];
+    let errorMsg = '';
 
-    for (const recipe of recipesToBackfill) {
-      try {
-        const data = await extractRecipeFromUrl(recipe.url);
-        if (data.readyInMinutes && data.readyInMinutes > 0) {
-          onUpdate({ ...recipe, cookTime: data.readyInMinutes });
-          updated++;
-        } else {
-          needsAI.push(recipe);
-        }
-      } catch {
-        needsAI.push(recipe);
-      }
-      setBackfillStatus(
-        `Processing… ${updated + needsAI.length} / ${recipesToBackfill.length} done`
-      );
-    }
-
-    if (needsAI.length > 0) {
-      setBackfillStatus(`Estimating ${needsAI.length} cook times with AI…`);
+    const BATCH_SIZE = 25;
+    for (let i = 0; i < recipesToBackfill.length; i += BATCH_SIZE) {
+      const batch = recipesToBackfill.slice(i, i + BATCH_SIZE);
+      setBackfillStatus(`Estimating cook times… ${Math.min(i + BATCH_SIZE, recipesToBackfill.length)} / ${recipesToBackfill.length}`);
       try {
         const response = await fetch('/api/estimate-cook-times', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            recipes: needsAI.map(r => ({
+            recipes: batch.map(r => ({
               id: r.id,
               name: r.name,
-              ingredients: r.ingredients,
-              directions: r.directions,
+              ingredients: r.ingredients.map(ing =>
+                typeof ing === 'string' ? ing : ing.name
+              ),
+              steps: r.directions.length,
             })),
           }),
         });
@@ -267,21 +254,28 @@ export function RecipeList({ recipes, onUpdate, onDelete, cookCounts, onAddToWee
           const { estimates } = await response.json();
           for (const est of estimates) {
             if (est.cookTime > 0) {
-              const recipe = needsAI.find(r => r.id === est.id);
+              const recipe = batch.find(r => r.id === est.id);
               if (recipe) {
                 onUpdate({ ...recipe, cookTime: est.cookTime });
                 updated++;
               }
             }
           }
+        } else {
+          const err = await response.json().catch(() => ({}));
+          errorMsg = err.error || `HTTP ${response.status}`;
         }
-      } catch {
-        // AI estimation failed silently
+      } catch (e) {
+        errorMsg = e instanceof Error ? e.message : 'Network error';
       }
     }
 
     setBackfilling(false);
-    setBackfillStatus(updated > 0 ? `${updated} updated` : 'No cook times found');
+    if (updated > 0) {
+      setBackfillStatus(`${updated} updated`);
+    } else {
+      setBackfillStatus(`Failed${errorMsg ? `: ${errorMsg}` : ''}`);
+    }
   };
 
   const toggleExpanded = (id: string) => {
