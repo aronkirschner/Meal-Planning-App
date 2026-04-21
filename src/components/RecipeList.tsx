@@ -2,7 +2,6 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import type { Recipe, RecipeCategory, CuisineType, DayOfWeek, DayMeal } from '../types';
 import { DAYS_OF_WEEK, CUISINE_TYPES } from '../types';
 import { RecipeForm } from './RecipeForm';
-import { extractRecipeFromUrl } from '../api';
 
 type SortOption = 'az' | 'rating' | 'cooked';
 
