@@ -237,9 +237,17 @@ export async function getWeekPlans(familyId: string): Promise<WeekPlan[]> {
   return snapshot.docs.map((doc) => doc.data() as WeekPlan);
 }
 
+function legacySundayKey(saturdayKey: string): string {
+  const d = new Date(saturdayKey + 'T12:00:00');
+  d.setDate(d.getDate() + 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 export async function getWeekPlan(familyId: string, weekStart: string): Promise<WeekPlan | undefined> {
   const plans = await getWeekPlans(familyId);
-  const matches = plans.filter((p) => p.weekStart === weekStart);
+  // Fall back to Sunday-based key for plans saved before the Saturday week-start migration
+  const legacyKey = legacySundayKey(weekStart);
+  const matches = plans.filter((p) => p.weekStart === weekStart || p.weekStart === legacyKey);
   if (matches.length === 0) return undefined;
   if (matches.length === 1) return matches[0];
   // Multiple documents for same week — return the one with the most meals

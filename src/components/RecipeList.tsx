@@ -62,9 +62,9 @@ const SLOT_LABELS: Record<keyof DayMeal, string> = {
   other: 'Other',
 };
 
-function getSunday(date: Date): Date {
+function getSaturday(date: Date): Date {
   const d = new Date(date);
-  d.setDate(d.getDate() - d.getDay());
+  d.setDate(d.getDate() - (d.getDay() + 1) % 7);
   d.setHours(0, 0, 0, 0);
   return d;
 }
@@ -86,27 +86,27 @@ function AddToWeekPicker({ recipe, onAdd, onClose }: {
   const [slot, setSlot] = useState<keyof DayMeal>(recipe.category);
   const ref = useRef<HTMLDivElement>(null);
 
-  const thisSunday = getSunday(new Date());
-  const selectedSunday = useMemo(() => {
-    const d = new Date(thisSunday);
+  const thisSaturday = getSaturday(new Date());
+  const selectedSaturday = useMemo(() => {
+    const d = new Date(thisSaturday);
     d.setDate(d.getDate() + weekOffset * 7);
     return d;
-  }, [thisSunday.getTime(), weekOffset]);
+  }, [thisSaturday.getTime(), weekOffset]);
 
-  const weekStart = formatDateISO(selectedSunday);
+  const weekStart = formatDateISO(selectedSaturday);
 
   const dayDates = useMemo(() => {
     return DAYS_OF_WEEK.map((d, i) => {
-      const date = new Date(selectedSunday);
+      const date = new Date(selectedSaturday);
       date.setDate(date.getDate() + i);
       const label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       return { key: d, label: `${DAY_LABELS[d]} ${label}` };
     });
-  }, [selectedSunday.getTime()]);
+  }, [selectedSaturday.getTime()]);
 
-  const weekEnd = new Date(selectedSunday);
+  const weekEnd = new Date(selectedSaturday);
   weekEnd.setDate(weekEnd.getDate() + 6);
-  const weekLabel = `${selectedSunday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+  const weekLabel = `${selectedSaturday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {

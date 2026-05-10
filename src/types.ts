@@ -108,7 +108,7 @@ export interface DayMeal {
 
 export interface WeekPlan {
   id: string;
-  weekStart: string; // ISO date string for the Sunday of the week
+  weekStart: string; // ISO date string for the Saturday of the week
   days: {
     sunday: DayMeal;
     monday: DayMeal;
@@ -123,13 +123,13 @@ export interface WeekPlan {
 export type DayOfWeek = keyof WeekPlan['days'];
 
 export const DAYS_OF_WEEK: DayOfWeek[] = [
+  'saturday',
   'sunday',
   'monday',
   'tuesday',
   'wednesday',
   'thursday',
   'friday',
-  'saturday',
 ];
 
 // User and Family types for multi-family support

@@ -79,10 +79,10 @@ function parseCSVLine(line: string): string[] {
   return fields;
 }
 
-function getSundayOfWeek(dateStr: string): string {
+function getSaturdayOfWeek(dateStr: string): string {
   const date = new Date(dateStr + 'T12:00:00');
   const dayOfWeek = date.getDay();
-  date.setDate(date.getDate() - dayOfWeek);
+  date.setDate(date.getDate() - (dayOfWeek + 1) % 7);
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');
   const d = String(date.getDate()).padStart(2, '0');
@@ -187,7 +187,7 @@ function parseCSVRows(csvText: string): ParsedMealRow[] {
     if (!dayOfWeek) continue;
 
     rows.push({
-      weekStart: getSundayOfWeek(weekStartRaw),
+      weekStart: getSaturdayOfWeek(weekStartRaw),
       day: dayOfWeek,
       mealName,
       category,
