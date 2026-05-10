@@ -143,10 +143,9 @@ function MealSelector({ label, value, recipes, onChange }: MealSelectorProps) {
               setShowCustomInput(false);
               onChange('');
             }}
-            className="btn-cancel-custom"
-            title="Back to dropdown"
+            className="btn-switch-to-recipe"
           >
-            &times;
+            ← Select recipe
           </button>
         </div>
       ) : (
