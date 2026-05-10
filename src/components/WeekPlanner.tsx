@@ -265,10 +265,7 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
     () => recipes.filter((r) => r.category === 'grain'),
     [recipes]
   );
-  const otherRecipes = useMemo(
-    () => recipes.filter((r) => r.category === 'other'),
-    [recipes]
-  );
+
 
   const handleMealChange = (
     day: DayOfWeek,
