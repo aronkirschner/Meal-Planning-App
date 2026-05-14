@@ -1284,32 +1284,46 @@
 .custom-input-group {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+}
+
+.custom-input-row {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  overflow: hidden;
 }
 
 .custom-meal-input {
-  width: 100%;
+  flex: 1;
   padding: 0.5rem;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
+  border: none;
+  outline: none;
   font-size: 0.9rem;
   background: var(--bg-primary);
   color: var(--text-primary);
   box-sizing: border-box;
 }
 
-.btn-switch-to-recipe {
-  background: none;
-  border: none;
-  padding: 0.15rem 0;
-  cursor: pointer;
-  font-size: 0.8rem;
-  color: var(--accent-color);
-  text-align: left;
+.custom-input-row:focus-within {
+  border-color: var(--primary-color);
 }
 
-.btn-switch-to-recipe:hover {
-  text-decoration: underline;
+.btn-switch-to-dropdown {
+  flex-shrink: 0;
+  padding: 0 0.6rem;
+  background: var(--bg-secondary);
+  border: none;
+  border-left: 1px solid var(--border-color);
+  cursor: pointer;
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  line-height: 1;
+}
+
+.btn-switch-to-dropdown:hover {
+  background: var(--border-color);
+  color: var(--text-primary);
 }
 
 .planner-actions {
