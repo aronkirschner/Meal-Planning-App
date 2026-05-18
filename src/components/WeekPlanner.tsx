@@ -242,6 +242,9 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(
     weekPlan?.id || null
   );
+  const [isDirty, setIsDirty] = useState(false);
+  const [savedFlash, setSavedFlash] = useState(false);
+  const savedFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Sync days when weekPlan prop loads asynchronously
   useEffect(() => {
@@ -249,6 +252,7 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
       setDays(weekPlan.days);
       setCurrentPlanId(weekPlan.id);
       setCurrentWeekStart(parseLocalDate(weekPlan.weekStart));
+      setIsDirty(false);
     }
   }, [weekPlan]);
 
@@ -278,6 +282,8 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
         [mealType]: value,
       },
     }));
+    setIsDirty(true);
+    setSavedFlash(false);
   };
 
   const handleSave = () => {
@@ -288,10 +294,16 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
     };
     setCurrentPlanId(plan.id);
     onSave(plan);
+    setIsDirty(false);
+    setSavedFlash(true);
+    if (savedFlashTimer.current) clearTimeout(savedFlashTimer.current);
+    savedFlashTimer.current = setTimeout(() => setSavedFlash(false), 2500);
   };
 
   const navigateToWeek = async (newWeekStart: Date) => {
     setCurrentWeekStart(newWeekStart);
+    setIsDirty(false);
+    setSavedFlash(false);
     if (onLoadWeekPlan) {
       const plan = await onLoadWeekPlan(formatDate(newWeekStart));
       setDays(plan?.days || emptyDays);
@@ -315,8 +327,9 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
   };
 
   const handleAIPlanGenerated = (plan: Record<DayOfWeek, DayMeal>) => {
-    // Merge AI-generated plan with current days
     setDays(plan);
+    setIsDirty(true);
+    setSavedFlash(false);
   };
 
   const weekEnd = addDays(currentWeekStart, 6);
@@ -403,9 +416,17 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
         >
           Clear Week
         </button>
-        <button onClick={handleSave} className="btn-primary">
-          Save Week Plan
-        </button>
+        <div className="planner-save-group">
+          {isDirty && (
+            <span className="unsaved-badge">● Unsaved changes</span>
+          )}
+          {savedFlash && !isDirty && (
+            <span className="saved-badge">✓ Saved!</span>
+          )}
+          <button onClick={handleSave} className={`btn-primary${isDirty ? ' btn-dirty' : ''}`}>
+            Save Week Plan
+          </button>
+        </div>
       </div>
 
       <div className="week-glance">
