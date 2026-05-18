@@ -130,26 +130,23 @@ function MealSelector({ label, value, recipes, onChange }: MealSelectorProps) {
       <label>{label}</label>
       {showCustomInput ? (
         <div className="custom-input-group">
-          <div className="custom-input-row">
-            <input
-              type="text"
-              value={customText}
-              onChange={(e) => handleCustomTextChange(e.target.value)}
-              placeholder="Enter custom item..."
-              className="custom-meal-input"
-            />
-            <button
-              type="button"
-              title="Switch to recipe dropdown"
-              onClick={() => {
-                setShowCustomInput(false);
-                onChange('');
-              }}
-              className="btn-switch-to-dropdown"
-            >
-              ▼
-            </button>
-          </div>
+          <input
+            type="text"
+            value={customText}
+            onChange={(e) => handleCustomTextChange(e.target.value)}
+            placeholder="Enter custom item..."
+            className="custom-meal-input"
+          />
+          <button
+            type="button"
+            onClick={() => {
+              setShowCustomInput(false);
+              onChange('');
+            }}
+            className="btn-switch-to-dropdown"
+          >
+            ↩ Use recipe instead
+          </button>
         </div>
       ) : (
         <div className="searchable-select">
