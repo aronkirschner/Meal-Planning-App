@@ -56,6 +56,20 @@ const DAY_LABELS: Record<DayOfWeek, string> = {
 
 const CUSTOM_PREFIX = 'custom:';
 
+function parseCustomValue(value: string): { name: string; url: string } {
+  const raw = value.slice(CUSTOM_PREFIX.length);
+  try {
+    const parsed = JSON.parse(raw);
+    return { name: parsed.name ?? '', url: parsed.url ?? '' };
+  } catch {
+    return { name: raw, url: '' };
+  }
+}
+
+function buildCustomValue(name: string, url: string): string {
+  return CUSTOM_PREFIX + JSON.stringify({ name, url });
+}
+
 interface MealSelectorProps {
   label: string;
   value: string;
@@ -65,7 +79,7 @@ interface MealSelectorProps {
 
 function MealSelector({ label, value, recipes, onChange }: MealSelectorProps) {
   const isCustom = value.startsWith(CUSTOM_PREFIX);
-  const customText = isCustom ? value.slice(CUSTOM_PREFIX.length) : '';
+  const { name: customName, url: customUrl } = isCustom ? parseCustomValue(value) : { name: '', url: '' };
   const [showCustomInput, setShowCustomInput] = useState(isCustom);
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -98,13 +112,17 @@ function MealSelector({ label, value, recipes, onChange }: MealSelectorProps) {
   }, [isOpen]);
 
   const handleCustomTextChange = (text: string) => {
-    onChange(CUSTOM_PREFIX + text);
+    onChange(buildCustomValue(text, customUrl));
+  };
+
+  const handleCustomUrlChange = (url: string) => {
+    onChange(buildCustomValue(customName, url));
   };
 
   const handleSelect = (newValue: string) => {
     if (newValue === '__custom__') {
       setShowCustomInput(true);
-      onChange(CUSTOM_PREFIX);
+      onChange(buildCustomValue('', ''));
     } else {
       setShowCustomInput(false);
       onChange(newValue);
@@ -132,10 +150,17 @@ function MealSelector({ label, value, recipes, onChange }: MealSelectorProps) {
         <div className="custom-input-group">
           <input
             type="text"
-            value={customText}
+            value={customName}
             onChange={(e) => handleCustomTextChange(e.target.value)}
             placeholder="Enter custom item..."
             className="custom-meal-input"
+          />
+          <input
+            type="url"
+            value={customUrl}
+            onChange={(e) => handleCustomUrlChange(e.target.value)}
+            placeholder="URL (optional)"
+            className="custom-meal-url-input"
           />
           <button
             type="button"
@@ -454,9 +479,9 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
                   <ul className="week-glance-meals">
                     {meals.map((m) => {
                       const isCustom = m.value.startsWith(CUSTOM_PREFIX);
-                      const customText = isCustom ? m.value.slice(CUSTOM_PREFIX.length) : '';
+                      const { name: customName, url: customUrl } = isCustom ? parseCustomValue(m.value) : { name: '', url: '' };
                       const recipe = !isCustom ? recipes.find((r) => r.id === m.value) : null;
-                      const displayName = recipe ? recipe.name : customText;
+                      const displayName = recipe ? recipe.name : customName;
                       return (
                         <li key={m.label} className="week-glance-meal">
                           <span className="week-glance-meal-label">{m.label}</span>
@@ -469,6 +494,16 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
                               >
                                 {displayName}
                               </button>
+                            ) : isCustom && customUrl ? (
+                              <a
+                                href={customUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="week-glance-recipe-link"
+                                title={customUrl}
+                              >
+                                {displayName}
+                              </a>
                             ) : (
                               <span className="week-glance-recipe-name">{displayName}</span>
                             )}

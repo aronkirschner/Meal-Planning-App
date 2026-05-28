@@ -1298,6 +1298,23 @@
   box-sizing: border-box;
 }
 
+.custom-meal-url-input {
+  width: 100%;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 0.82rem;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  box-sizing: border-box;
+  opacity: 0.85;
+}
+
+.custom-meal-url-input::placeholder {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
 .btn-switch-to-dropdown {
   display: inline-flex;
   align-items: center;
