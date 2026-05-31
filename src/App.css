@@ -1298,6 +1298,30 @@
   box-sizing: border-box;
 }
 
+.custom-meal-url-row {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.custom-meal-url-open {
+  flex-shrink: 0;
+  padding: 0.3rem 0.45rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  color: var(--primary-color);
+  font-size: 0.85rem;
+  text-decoration: none;
+  line-height: 1;
+}
+
+.custom-meal-url-open:hover {
+  background: var(--primary-color);
+  color: #fff;
+  border-color: var(--primary-color);
+}
+
 .custom-meal-url-input {
   width: 100%;
   padding: 0.4rem 0.5rem;

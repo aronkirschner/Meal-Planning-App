@@ -155,13 +155,26 @@ function MealSelector({ label, value, recipes, onChange }: MealSelectorProps) {
             placeholder="Enter custom item..."
             className="custom-meal-input"
           />
-          <input
-            type="url"
-            value={customUrl}
-            onChange={(e) => handleCustomUrlChange(e.target.value)}
-            placeholder="URL (optional)"
-            className="custom-meal-url-input"
-          />
+          <div className="custom-meal-url-row">
+            <input
+              type="url"
+              value={customUrl}
+              onChange={(e) => handleCustomUrlChange(e.target.value)}
+              placeholder="URL (optional)"
+              className="custom-meal-url-input"
+            />
+            {customUrl && (
+              <a
+                href={customUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="custom-meal-url-open"
+                title="Open URL"
+              >
+                ↗
+              </a>
+            )}
+          </div>
           <button
             type="button"
             onClick={() => {
