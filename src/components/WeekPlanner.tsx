@@ -373,9 +373,16 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
       if (added > 0) parts.push(`${added} meal${added === 1 ? '' : 's'} synced`);
       if (result.deleted > 0) parts.push(`${result.deleted} removed`);
       if (result.failed > 0) parts.push(`${result.failed} failed`);
-      setSyncStatus(
-        parts.length > 0 ? `✓ ${parts.join(', ')}` : 'Nothing to sync this week'
-      );
+
+      if (result.failed > 0) {
+        console.error('Calendar sync error:', result.errorMessage);
+        const detail = result.errorMessage ? `: ${result.errorMessage}` : '';
+        setSyncStatus(`⚠ ${parts.join(', ')}${detail}`);
+      } else {
+        setSyncStatus(
+          parts.length > 0 ? `✓ ${parts.join(', ')}` : 'Nothing to sync this week'
+        );
+      }
     } catch (err) {
       if (err instanceof CalendarAuthError) {
         setSyncStatus('Calendar access expired — please try again.');

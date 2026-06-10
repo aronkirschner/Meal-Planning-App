@@ -29,6 +29,8 @@ export interface SyncResult {
   updated: number;
   deleted: number;
   failed: number;
+  /** Human-readable reason for the first failure, if any. */
+  errorMessage?: string;
 }
 
 /** Thrown when the access token is rejected, so the UI can prompt to re-connect. */
@@ -85,20 +87,30 @@ function authHeaders(token: string): HeadersInit {
   };
 }
 
+// Pull a readable message out of a Google API error response.
+async function readError(res: Response): Promise<string> {
+  try {
+    const body = (await res.json()) as { error?: { message?: string } };
+    return body.error?.message || `HTTP ${res.status}`;
+  } catch {
+    return `HTTP ${res.status}`;
+  }
+}
+
 // Create the event, or update it if one with this ID already exists (so repeated
 // syncs are idempotent rather than piling up duplicates).
 async function upsertEvent(
   token: string,
   id: string,
   body: Record<string, unknown>
-): Promise<'created' | 'updated' | 'failed'> {
+): Promise<{ outcome: 'created' | 'updated' | 'failed'; error?: string }> {
   const insertRes = await fetch(EVENTS_API, {
     method: 'POST',
     headers: authHeaders(token),
     body: JSON.stringify({ id, ...body }),
   });
-  if (insertRes.ok) return 'created';
-  if (insertRes.status === 401) throw new CalendarAuthError();
+  if (insertRes.ok) return { outcome: 'created' };
+  if (insertRes.status === 401) throw new CalendarAuthError(await readError(insertRes));
   if (insertRes.status === 409) {
     // Event already exists (or was previously deleted) — update revives/refreshes it.
     const updateRes = await fetch(`${EVENTS_API}/${id}`, {
@@ -106,10 +118,11 @@ async function upsertEvent(
       headers: authHeaders(token),
       body: JSON.stringify({ ...body, status: 'confirmed' }),
     });
-    if (updateRes.status === 401) throw new CalendarAuthError();
-    return updateRes.ok ? 'updated' : 'failed';
+    if (updateRes.status === 401) throw new CalendarAuthError(await readError(updateRes));
+    if (updateRes.ok) return { outcome: 'updated' };
+    return { outcome: 'failed', error: await readError(updateRes) };
   }
-  return 'failed';
+  return { outcome: 'failed', error: await readError(insertRes) };
 }
 
 // Remove a previously-synced event (e.g. the meal was cleared). A 404/410 means
@@ -164,7 +177,7 @@ export async function syncWeekToCalendar(
       .map((c) => (c.url ? `${c.label}: ${c.name}\n${c.url}` : `${c.label}: ${c.name}`))
       .join('\n\n');
 
-    const outcome = await upsertEvent(accessToken, eventId, {
+    const { outcome, error } = await upsertEvent(accessToken, eventId, {
       summary,
       description,
       start: { dateTime: start.toISOString(), timeZone },
@@ -177,7 +190,10 @@ export async function syncWeekToCalendar(
 
     if (outcome === 'created') result.created++;
     else if (outcome === 'updated') result.updated++;
-    else result.failed++;
+    else {
+      result.failed++;
+      if (!result.errorMessage && error) result.errorMessage = error;
+    }
   }
 
   return result;
