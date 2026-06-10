@@ -2,7 +2,13 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import type { Recipe, WeekPlan, DayMeal, DayOfWeek } from '../types';
 import { DAYS_OF_WEEK } from '../types';
 import { generateId } from '../firestore-storage';
+import { requestCalendarToken } from '../firebase';
+import { syncWeekToCalendar, CalendarAuthError } from '../google-calendar';
+import { useAuth } from '../AuthContext';
 import { AIPlannerInput } from './AIPlannerInput';
+
+// Local hour (24h) for synced dinner events. Change this to shift the time.
+const DINNER_HOUR = 18; // 6:00 PM
 
 interface WeekPlannerProps {
   recipes: Recipe[];
@@ -283,6 +289,9 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
   const [isDirty, setIsDirty] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
   const savedFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { family } = useAuth();
+  const [syncing, setSyncing] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<string | null>(null);
 
   // Sync days when weekPlan prop loads asynchronously
   useEffect(() => {
@@ -336,6 +345,52 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
     setSavedFlash(true);
     if (savedFlashTimer.current) clearTimeout(savedFlashTimer.current);
     savedFlashTimer.current = setTimeout(() => setSavedFlash(false), 2500);
+  };
+
+  const hasAnyMeal = useMemo(
+    () =>
+      DAYS_OF_WEEK.some((day) =>
+        (['main', 'vegetable', 'grain', 'other'] as const).some((k) => days[day][k])
+      ),
+    [days]
+  );
+
+  const handleSyncToCalendar = async () => {
+    if (!family) return;
+    setSyncing(true);
+    setSyncStatus(null);
+    try {
+      const token = await requestCalendarToken();
+      const result = await syncWeekToCalendar(
+        token,
+        formatDate(currentWeekStart),
+        days,
+        recipes,
+        { familyId: family.id, hour: DINNER_HOUR }
+      );
+      const added = result.created + result.updated;
+      const parts: string[] = [];
+      if (added > 0) parts.push(`${added} meal${added === 1 ? '' : 's'} synced`);
+      if (result.deleted > 0) parts.push(`${result.deleted} removed`);
+      if (result.failed > 0) parts.push(`${result.failed} failed`);
+      setSyncStatus(
+        parts.length > 0 ? `✓ ${parts.join(', ')}` : 'Nothing to sync this week'
+      );
+    } catch (err) {
+      if (err instanceof CalendarAuthError) {
+        setSyncStatus('Calendar access expired — please try again.');
+      } else if (
+        err instanceof Error &&
+        err.message.includes('auth/popup-closed-by-user')
+      ) {
+        setSyncStatus(null);
+      } else {
+        console.error('Calendar sync failed:', err);
+        setSyncStatus('Sync failed. Please try again.');
+      }
+    } finally {
+      setSyncing(false);
+    }
   };
 
   const navigateToWeek = async (newWeekStart: Date) => {
@@ -455,6 +510,19 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
           Clear Week
         </button>
         <div className="planner-save-group">
+          {syncStatus && <span className="sync-status">{syncStatus}</span>}
+          <button
+            onClick={handleSyncToCalendar}
+            className="btn-secondary"
+            disabled={syncing || !hasAnyMeal}
+            title={
+              hasAnyMeal
+                ? 'Add this week’s dinners to your Google Calendar'
+                : 'Add some meals first'
+            }
+          >
+            {syncing ? 'Syncing…' : '📅 Sync to Google Calendar'}
+          </button>
           {isDirty && (
             <span className="unsaved-badge">● Unsaved changes</span>
           )}

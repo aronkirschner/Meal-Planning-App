@@ -1401,6 +1401,13 @@
   outline-offset: 2px;
 }
 
+.sync-status {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #1e3a8a;
+  white-space: nowrap;
+}
+
 /* Week at a Glance */
 .week-glance {
   margin-top: 2rem;
