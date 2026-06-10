@@ -292,6 +292,14 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
   const { family } = useAuth();
   const [syncing, setSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
+  // Google access token kept in memory only (never persisted). Valid ~1 hour.
+  const [calendarToken, setCalendarToken] = useState<
+    { token: string; expiresAt: number } | null
+  >(null);
+  // User preference: re-sync to calendar on every save. Persisted; the token is not.
+  const [autoSync, setAutoSync] = useState<boolean>(
+    () => localStorage.getItem('calendarAutoSync') === 'true'
+  );
 
   // Sync days when weekPlan prop loads asynchronously
   useEffect(() => {
@@ -345,6 +353,17 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
     setSavedFlash(true);
     if (savedFlashTimer.current) clearTimeout(savedFlashTimer.current);
     savedFlashTimer.current = setTimeout(() => setSavedFlash(false), 2500);
+
+    // Auto-sync this week if enabled. Only when we still hold a valid token, so
+    // saving never triggers a surprise Google popup — if the token has expired,
+    // prompt the user to reconnect via the Sync button instead.
+    if (autoSync) {
+      if (calendarToken && calendarToken.expiresAt > Date.now()) {
+        void runCalendarSync(calendarToken.token).catch(handleSyncError);
+      } else {
+        setSyncStatus('Saved — click Sync to reconnect your calendar.');
+      }
+    }
   };
 
   const hasAnyMeal = useMemo(
@@ -355,46 +374,94 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
     [days]
   );
 
+  // Firebase Google access tokens last ~1 hour; refresh a little early.
+  const TOKEN_TTL_MS = 55 * 60 * 1000;
+
+  // Return a valid in-memory token, prompting Google for one only if needed.
+  // Must be called from within a user gesture (the popup requires it).
+  const ensureCalendarToken = async (): Promise<string> => {
+    if (calendarToken && calendarToken.expiresAt > Date.now()) {
+      return calendarToken.token;
+    }
+    const token = await requestCalendarToken();
+    setCalendarToken({ token, expiresAt: Date.now() + TOKEN_TTL_MS });
+    return token;
+  };
+
+  const handleSyncError = (err: unknown) => {
+    if (err instanceof CalendarAuthError) {
+      setCalendarToken(null);
+      setSyncStatus('Calendar access expired — click Sync to reconnect.');
+    } else if (
+      err instanceof Error &&
+      err.message.includes('auth/popup-closed-by-user')
+    ) {
+      setSyncStatus(null);
+    } else {
+      console.error('Calendar sync failed:', err);
+      setSyncStatus('Sync failed. Please try again.');
+    }
+  };
+
+  // Sync the currently-displayed week using an already-obtained token.
+  const runCalendarSync = async (token: string) => {
+    if (!family) return;
+    const result = await syncWeekToCalendar(
+      token,
+      formatDate(currentWeekStart),
+      days,
+      recipes,
+      { familyId: family.id, hour: DINNER_HOUR }
+    );
+    const added = result.created + result.updated;
+    const parts: string[] = [];
+    if (added > 0) parts.push(`${added} meal${added === 1 ? '' : 's'} synced`);
+    if (result.deleted > 0) parts.push(`${result.deleted} removed`);
+    if (result.failed > 0) parts.push(`${result.failed} failed`);
+
+    if (result.failed > 0) {
+      console.error('Calendar sync error:', result.errorMessage);
+      const detail = result.errorMessage ? `: ${result.errorMessage}` : '';
+      setSyncStatus(`⚠ ${parts.join(', ')}${detail}`);
+    } else {
+      setSyncStatus(
+        parts.length > 0 ? `✓ ${parts.join(', ')}` : 'Nothing to sync this week'
+      );
+    }
+  };
+
   const handleSyncToCalendar = async () => {
     if (!family) return;
     setSyncing(true);
     setSyncStatus(null);
     try {
-      const token = await requestCalendarToken();
-      const result = await syncWeekToCalendar(
-        token,
-        formatDate(currentWeekStart),
-        days,
-        recipes,
-        { familyId: family.id, hour: DINNER_HOUR }
-      );
-      const added = result.created + result.updated;
-      const parts: string[] = [];
-      if (added > 0) parts.push(`${added} meal${added === 1 ? '' : 's'} synced`);
-      if (result.deleted > 0) parts.push(`${result.deleted} removed`);
-      if (result.failed > 0) parts.push(`${result.failed} failed`);
-
-      if (result.failed > 0) {
-        console.error('Calendar sync error:', result.errorMessage);
-        const detail = result.errorMessage ? `: ${result.errorMessage}` : '';
-        setSyncStatus(`⚠ ${parts.join(', ')}${detail}`);
-      } else {
-        setSyncStatus(
-          parts.length > 0 ? `✓ ${parts.join(', ')}` : 'Nothing to sync this week'
-        );
-      }
+      const token = await ensureCalendarToken();
+      await runCalendarSync(token);
     } catch (err) {
-      if (err instanceof CalendarAuthError) {
-        setSyncStatus('Calendar access expired — please try again.');
-      } else if (
-        err instanceof Error &&
-        err.message.includes('auth/popup-closed-by-user')
-      ) {
-        setSyncStatus(null);
-      } else {
-        console.error('Calendar sync failed:', err);
-        setSyncStatus('Sync failed. Please try again.');
-      }
+      handleSyncError(err);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const handleToggleAutoSync = async () => {
+    if (autoSync) {
+      setAutoSync(false);
+      localStorage.setItem('calendarAutoSync', 'false');
+      return;
+    }
+    // Turning on: connect now (within this click) and do an initial sync.
+    setSyncing(true);
+    setSyncStatus(null);
+    try {
+      const token = await ensureCalendarToken();
+      setAutoSync(true);
+      localStorage.setItem('calendarAutoSync', 'true');
+      await runCalendarSync(token);
+    } catch (err) {
+      handleSyncError(err);
+      setAutoSync(false);
+      localStorage.setItem('calendarAutoSync', 'false');
     } finally {
       setSyncing(false);
     }
@@ -518,6 +585,18 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
         </button>
         <div className="planner-save-group">
           {syncStatus && <span className="sync-status">{syncStatus}</span>}
+          <label
+            className="autosync-toggle"
+            title="Automatically sync this week to Google Calendar whenever you save"
+          >
+            <input
+              type="checkbox"
+              checked={autoSync}
+              onChange={handleToggleAutoSync}
+              disabled={syncing}
+            />
+            Auto-sync on save
+          </label>
           <button
             onClick={handleSyncToCalendar}
             className="btn-secondary"

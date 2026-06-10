@@ -1408,6 +1408,20 @@
   white-space: nowrap;
 }
 
+.autosync-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  color: #475569;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.autosync-toggle input {
+  cursor: pointer;
+}
+
 /* Week at a Glance */
 .week-glance {
   margin-top: 2rem;
