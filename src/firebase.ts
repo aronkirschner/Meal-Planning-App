@@ -39,9 +39,9 @@ export async function signInWithGoogle(): Promise<User> {
 export async function requestCalendarToken(): Promise<string> {
   const provider = new GoogleAuthProvider();
   provider.addScope('https://www.googleapis.com/auth/calendar.events');
-  // Force the consent/account screen so we reliably get back a fresh access token
-  // that carries the calendar scope.
-  provider.setCustomParameters({ prompt: 'consent' });
+  // No forced `prompt: 'consent'`: Google shows the approval screen only the first
+  // time (when the calendar scope is new), then returns fresh tokens quietly on
+  // later calls since the grant is remembered. Keeps re-syncs friction-free.
 
   const result = await signInWithPopup(auth, provider);
   const credential = GoogleAuthProvider.credentialFromResult(result);
