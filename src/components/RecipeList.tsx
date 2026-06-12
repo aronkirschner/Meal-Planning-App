@@ -340,13 +340,14 @@ export function RecipeList({ recipes, onUpdate, onDelete, cookCounts, onAddToWee
       )}
 
       {filteredRecipes.length === 0 ? (
-        <p className="no-recipes">
-          No recipes found. Add some recipes to get started!
-        </p>
+        <div className="no-recipes">
+          <span className="no-recipes-icon" aria-hidden="true">🍳</span>
+          <p>No recipes found. Add your first recipe or import from Paprika to get started!</p>
+        </div>
       ) : (
         (['main', 'vegetable', 'grain', 'other'] as RecipeCategory[]).map((category) =>
           groupedRecipes[category]?.length > 0 ? (
-            <div key={category} className="recipe-category-group">
+            <div key={category} className={`recipe-category-group recipe-category-group--${category}`}>
               <h3>{CATEGORY_LABELS[category]}</h3>
               <div className="recipe-grid">
                 {groupedRecipes[category].map((recipe) =>
@@ -359,7 +360,7 @@ export function RecipeList({ recipes, onUpdate, onDelete, cookCounts, onAddToWee
                       />
                     </div>
                   ) : (
-                    <div key={recipe.id} className={`recipe-card ${expandedId === recipe.id ? 'expanded' : ''}`}>
+                    <div key={recipe.id} className={`recipe-card recipe-card--${recipe.category} ${expandedId === recipe.id ? 'expanded' : ''}`}>
                       <h4>{recipe.name}</h4>
                       {recipe.cuisineType && (
                         <span className="cuisine-badge">{recipe.cuisineType}</span>

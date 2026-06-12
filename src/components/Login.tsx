@@ -16,6 +16,7 @@ export function Login() {
   return (
     <div className="login-container">
       <div className="login-card">
+        <div className="login-emblem" aria-hidden="true">🍲</div>
         <h1>Meal Planner</h1>
         <p className="login-subtitle">Plan your weekly meals together</p>
 

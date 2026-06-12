@@ -292,29 +292,32 @@ function MealPlannerApp() {
   return (
     <div className="app">
       <header className="app-header">
-        <div className="header-top">
-          <div className="user-info">
-            {appUser.photoURL && (
-              <img
-                src={appUser.photoURL}
-                alt=""
-                className="user-avatar"
-              />
-            )}
-            <span className="user-name">{appUser.displayName}</span>
+        <div className="brand">
+          <span className="brand-mark" aria-hidden="true">🌿</span>
+          <div className="brand-text">
+            <h1>Meal Planner</h1>
+            <button
+              onClick={() => setShowInviteModal(true)}
+              className="family-chip"
+              title="Invite family members"
+            >
+              {family.name} · Invite
+            </button>
           </div>
+        </div>
+        <div className="user-info">
+          {appUser.photoURL && (
+            <img
+              src={appUser.photoURL}
+              alt=""
+              className="user-avatar"
+            />
+          )}
+          <span className="user-name">{appUser.displayName}</span>
           <button onClick={logOut} className="btn-secondary btn-sm">
             Sign Out
           </button>
         </div>
-        <h1>Meal Planner</h1>
-        <p className="subtitle">{family.name}</p>
-        <button
-          onClick={() => setShowInviteModal(true)}
-          className="btn-link invite-toggle"
-        >
-          Invite Family Members
-        </button>
       </header>
 
       {showInviteModal && (
@@ -405,7 +408,6 @@ function MealPlannerApp() {
 
         {activeTab === 'planner' && (
           <div className="planner-tab">
-            <h2>Weekly Meal Planner</h2>
             <WeekPlanner
               recipes={recipes}
               weekPlan={currentWeekPlan}
@@ -426,7 +428,6 @@ function MealPlannerApp() {
 
         {activeTab === 'analytics' && (
           <div className="analytics-tab">
-            <h2>Cooking Analytics</h2>
             <CookingAnalytics
               recipes={recipes}
               familyId={family.id}
@@ -436,7 +437,6 @@ function MealPlannerApp() {
 
         {activeTab === 'community' && (
           <div className="community-tab">
-            <h2>Community Recipes</h2>
             <CommunityRecipes
               familyId={family.id}
               onRecipeAdded={handleCommunityRecipeAdded}

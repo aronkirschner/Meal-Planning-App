@@ -78,12 +78,14 @@ function buildCustomValue(name: string, url: string): string {
 
 interface MealSelectorProps {
   label: string;
+  /** Meal slot, used purely for category color-coding. */
+  category: keyof DayMeal;
   value: string;
   recipes: Recipe[];
   onChange: (value: string) => void;
 }
 
-function MealSelector({ label, value, recipes, onChange }: MealSelectorProps) {
+function MealSelector({ label, category, value, recipes, onChange }: MealSelectorProps) {
   const isCustom = value.startsWith(CUSTOM_PREFIX);
   const { name: customName, url: customUrl } = isCustom ? parseCustomValue(value) : { name: '', url: '' };
   const [showCustomInput, setShowCustomInput] = useState(isCustom);
@@ -150,7 +152,7 @@ function MealSelector({ label, value, recipes, onChange }: MealSelectorProps) {
   }, [recipes, search]);
 
   return (
-    <div className="meal-selector" ref={containerRef}>
+    <div className={`meal-selector meal-selector--${category}`} ref={containerRef}>
       <label>{label}</label>
       {showCustomInput ? (
         <div className="custom-input-group">
@@ -533,15 +535,18 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
       <div className="week-grid">
         {DAYS_OF_WEEK.map((day, index) => {
           const dayDate = addDays(currentWeekStart, index);
+          const isToday = dayDate.toDateString() === new Date().toDateString();
           return (
-            <div key={day} className="day-column">
+            <div key={day} className={`day-column${isToday ? ' is-today' : ''}`}>
               <div className="day-header">
                 <strong>{DAY_LABELS[day]}</strong>
                 <span className="day-date">{formatDisplayDate(dayDate)}</span>
+                {isToday && <span className="today-badge">Today</span>}
               </div>
 
               <MealSelector
                 label="Main Dish"
+                category="main"
                 value={days[day].main || ''}
                 recipes={mainRecipes}
                 onChange={(value) => handleMealChange(day, 'main', value)}
@@ -549,6 +554,7 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
 
               <MealSelector
                 label="Vegetable"
+                category="vegetable"
                 value={days[day].vegetable || ''}
                 recipes={vegetableRecipes}
                 onChange={(value) => handleMealChange(day, 'vegetable', value)}
@@ -556,6 +562,7 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
 
               <MealSelector
                 label="Grain"
+                category="grain"
                 value={days[day].grain || ''}
                 recipes={grainRecipes}
                 onChange={(value) => handleMealChange(day, 'grain', value)}
@@ -563,6 +570,7 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
 
               <MealSelector
                 label="Other"
+                category="other"
                 value={days[day].other || ''}
                 recipes={recipes}
                 onChange={(value) => handleMealChange(day, 'other', value)}
@@ -626,6 +634,7 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
         <div className="week-glance-grid">
           {DAYS_OF_WEEK.map((day, index) => {
             const dayDate = addDays(currentWeekStart, index);
+            const isToday = dayDate.toDateString() === new Date().toDateString();
             const dayPlan = days[day];
             const meals: { label: string; value: string }[] = [
               { label: 'Main', value: dayPlan.main || '' },
@@ -635,7 +644,7 @@ export function WeekPlanner({ recipes, weekPlan, onSave, onLoadWeekPlan, cookCou
             ].filter((m) => m.value);
 
             return (
-              <div key={day} className="week-glance-day">
+              <div key={day} className={`week-glance-day${isToday ? ' is-today' : ''}`}>
                 <div className="week-glance-day-header">
                   <span className="week-glance-day-name">{DAY_LABELS[day].slice(0, 3)}</span>
                   <span className="week-glance-day-date">{formatDisplayDate(dayDate)}</span>
