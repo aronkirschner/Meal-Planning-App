@@ -1267,6 +1267,10 @@
   box-shadow: 0 0 0 1px var(--accent), var(--shadow-rest);
 }
 
+.day-column.is-today .day-header strong {
+  color: var(--accent);
+}
+
 .day-header {
   text-align: center;
   margin-bottom: 1rem;
@@ -1286,16 +1290,19 @@
 }
 
 .today-badge {
-  display: inline-block;
-  font-size: 0.65rem;
-  font-weight: 800;
+  display: block;
+  width: fit-content;
+  margin: 0.35rem auto 0;
+  font-size: 0.6rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #fff;
-  background: var(--accent);
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
   border-radius: var(--radius-pill);
-  padding: 0.1rem 0.5rem;
-  margin-top: 0.25rem;
+  padding: 0.08rem 0.5rem;
+  line-height: 1.4;
 }
 
 /* Meal selectors — category-coded left rail */
